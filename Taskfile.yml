@@ -1,0 +1,75 @@
+﻿version: "3"
+
+tasks:
+  backend:run:
+    desc: Run backend locally
+    dir: backend
+    cmds:
+      - uv run uvicorn backend.main:app --reload
+
+  backend:test:
+    desc: Run backend tests
+    dir: backend
+    cmds:
+      - uv run pytest
+
+  backend:lint:
+    desc: Run backend lint checks
+    dir: backend
+    cmds:
+      - uv run ruff check .
+
+  backend:format:
+    desc: Format backend code
+    dir: backend
+    cmds:
+      - uv run ruff format .
+
+  backend:format:check:
+    desc: Check backend formatting
+    dir: backend
+    cmds:
+      - uv run ruff format --check .
+
+  backend:typecheck:
+    desc: Run backend type checks
+    dir: backend
+    cmds:
+      - uv run mypy src tests
+
+  backend:check:
+    desc: Run all backend checks
+    deps:
+      - backend:lint
+      - backend:format:check
+      - backend:test
+      - backend:typecheck
+
+  docker:up:
+    desc: Start local Docker environment
+    deps:
+      - docker:tag-images
+    cmds:
+      - docker compose up --build
+
+  docker:down:
+    desc: Stop local Docker environment
+    cmds:
+      - docker compose down
+
+  docker:logs:
+    desc: Show backend Docker logs
+    cmds:
+      - docker compose logs -f backend
+
+  docker:tag-images:
+    desc: Create local project image aliases
+    cmds:
+      - docker pull postgres:17-alpine
+      - docker tag postgres:17-alpine daily_organizer/postgres:17-alpine
+
+  docker:clean-old-images:
+    desc: Remove old local image names
+    cmds:
+      - docker image rm daily_organizer-backend:latest daily_organizer/backend:local
+    ignore_error: true

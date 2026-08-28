@@ -1,0 +1,43 @@
+﻿name: daily_organizer
+
+services:
+  postgres:
+    image: postgres:17-alpine
+    container_name: daily_organizer_postgres
+    environment:
+      POSTGRES_DB: daily_organizer
+      POSTGRES_USER: daily_organizer
+      POSTGRES_PASSWORD: daily_organizer
+    ports:
+      - "127.0.0.1:5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U daily_organizer -d daily_organizer"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    image: daily_organizer_backend:latest
+    container_name: daily_organizer_backend
+    environment:
+      APP_ENV: local
+      APP_DEBUG: "true"
+      DATABASE_URL: postgresql+psycopg://daily_organizer:daily_organizer@postgres:5432/daily_organizer
+      JWT_ACCESS_TOKEN_TTL_MINUTES: "30"
+      JWT_REFRESH_TOKEN_TTL_DAYS: "30"
+      JWT_SECRET_KEY: change-me-in-local-env
+      COOKIE_SECURE: "false"
+      COOKIE_SAMESITE: lax
+    ports:
+      - "127.0.0.1:8000:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+volumes:
+  postgres_data:

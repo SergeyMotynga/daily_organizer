@@ -1,0 +1,64 @@
+[project]
+name = "backend"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+authors = [
+    { name = "Sergey Motynga", email = "motynga12345@mail.ru" }
+]
+requires-python = ">=3.11"
+dependencies = [
+    "alembic>=1.19.1",
+    "fastapi>=0.141.1",
+    "passlib[bcrypt]>=1.7.4",
+    "psycopg[binary]>=3.3.4",
+    "pydantic-settings>=2.15.0",
+    "python-jose[cryptography]>=3.5.0",
+    "sqlalchemy>=2.0.52",
+    "uvicorn[standard]>=0.52.4",
+]
+[project.scripts]
+backend = "backend:main"
+
+[build-system]
+requires = ["uv_build>=0.12.7,<0.13.0"]
+build-backend = "uv_build"
+
+[dependency-groups]
+dev = [
+    "httpx>=0.28.1",
+    "mypy>=2.3.1",
+    "pytest>=9.1.1",
+    "pytest-asyncio>=1.4.0",
+    "pytest-cov>=7.1.0",
+    "ruff>=0.16.5",
+]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+src = ["src", "tests"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP", "SIM"]
+ignore = []
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+line-ending = "auto"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]
+addopts = [
+    "--strict-markers",
+    "--strict-config",
+]
+
+[tool.mypy]
+python_version = "3.12"
+mypy_path = "src"
+strict = true
+warn_unreachable = true
+warn_unused_ignores = true

@@ -19,6 +19,8 @@ services:
       retries: 5
 
   backend:
+    profiles:
+      - app
     build:
       context: ./backend
       dockerfile: Dockerfile
@@ -27,7 +29,7 @@ services:
     environment:
       APP_ENV: local
       APP_DEBUG: "true"
-      DATABASE_URL: postgresql+psycopg://daily_organizer:daily_organizer@postgres:5432/daily_organizer
+      DATABASE_URL: postgresql+asyncpg://daily_organizer:daily_organizer@postgres:5432/daily_organizer
       JWT_ACCESS_TOKEN_TTL_MINUTES: "30"
       JWT_REFRESH_TOKEN_TTL_DAYS: "30"
       JWT_SECRET_KEY: change-me-in-local-env

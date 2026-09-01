@@ -13,6 +13,12 @@ tasks:
     cmds:
       - uv run pytest
 
+  backend:test-cov:
+    desc: Run backend tests with coverage report
+    dir: backend
+    cmds:
+      - uv run pytest --cov=backend --cov-report=term-missing
+
   backend:lint:
     desc: Run backend lint checks
     dir: backend
@@ -46,11 +52,17 @@ tasks:
       - backend:typecheck
 
   docker:up:
-    desc: Start local Docker environment
-    deps:
-      - docker:tag-images
+    desc: Start PostgreSQL for local development
     cmds:
-      - docker compose up --build
+      - docker compose up -d postgres
+
+  docker:test-db:
+    desc: Create PostgreSQL test database if it does not exist
+    cmds:
+      - cmd: powershell -NoProfile -ExecutionPolicy Bypass -File scripts/create-test-db.ps1
+        platforms: [windows]
+      - cmd: bash scripts/create-test-db.sh
+        platforms: [linux, darwin]
 
   docker:down:
     desc: Stop local Docker environment
@@ -58,18 +70,16 @@ tasks:
       - docker compose down
 
   docker:logs:
-    desc: Show backend Docker logs
+    desc: Show PostgreSQL Docker logs
     cmds:
-      - docker compose logs -f backend
+      - docker compose logs -f postgres
 
-  docker:tag-images:
-    desc: Create local project image aliases
+  docker:app:
+    desc: Start PostgreSQL and backend container
     cmds:
-      - docker pull postgres:17-alpine
-      - docker tag postgres:17-alpine daily_organizer/postgres:17-alpine
+      - docker compose --profile app up --build
 
-  docker:clean-old-images:
-    desc: Remove old local image names
+  docker:app:down:
+    desc: Stop backend container and PostgreSQL
     cmds:
-      - docker image rm daily_organizer-backend:latest daily_organizer/backend:local
-    ignore_error: true
+      - docker compose --profile app down

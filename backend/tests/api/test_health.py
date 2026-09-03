@@ -1,15 +1,13 @@
 """Тесты системных endpoint-ов."""
 
-from fastapi.testclient import TestClient
+import pytest
+from httpx import AsyncClient
 
-from backend.main import app
 
-
-def test_health_check_returns_ok() -> None:
+@pytest.mark.anyio
+async def test_health_check_returns_ok(client: AsyncClient) -> None:
     """Health endpoint возвращает статус приложения."""
-    client = TestClient(app)
-
-    response = client.get("/health")
+    response = await client.get("/health")
 
     assert response.status_code == 200
     assert response.json() == {"status": "ok"}

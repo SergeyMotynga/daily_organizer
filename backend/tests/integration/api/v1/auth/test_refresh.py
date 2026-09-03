@@ -7,7 +7,7 @@ from tests.integration.api.v1.auth.helpers import login_user, register_user
 
 @pytest.mark.anyio
 async def test_refresh_updates_access_cookie(client: AsyncClient) -> None:
-    """Refresh по активной сессии обновляет access cookie."""
+    """Refresh по активной сессии обновляет access cookie и не трогает refresh cookie."""
     await register_user(client)
     login_response = await login_user(client)
     old_access_token = login_response.cookies["access_token"]
@@ -18,6 +18,9 @@ async def test_refresh_updates_access_cookie(client: AsyncClient) -> None:
     assert response.json() == login_response.json()
     assert "access_token" in response.cookies
     assert response.cookies["access_token"] != old_access_token
+    set_cookie_headers = response.headers.get_list("set-cookie")
+    assert any(cookie.startswith("access_token=") for cookie in set_cookie_headers)
+    assert not any(cookie.startswith("refresh_token=") for cookie in set_cookie_headers)
 
 
 @pytest.mark.anyio

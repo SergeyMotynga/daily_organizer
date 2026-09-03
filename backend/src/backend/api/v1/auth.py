@@ -19,8 +19,8 @@ from backend.services.auth import AuthResult, AuthService
 router = APIRouter(prefix="/api/v1/auth", tags=["auth"])
 
 
-def set_auth_cookies(response: Response, auth: AuthResult, settings: Settings) -> None:
-    """Устанавливает access и refresh token в httpOnly cookies."""
+def set_access_cookie(response: Response, auth: AuthResult, settings: Settings) -> None:
+    """Устанавливает access token в httpOnly cookie."""
     response.set_cookie(
         ACCESS_COOKIE_NAME,
         auth.access_token,
@@ -30,6 +30,11 @@ def set_auth_cookies(response: Response, auth: AuthResult, settings: Settings) -
         samesite=settings.cookie_samesite,
         path="/",
     )
+
+
+def set_auth_cookies(response: Response, auth: AuthResult, settings: Settings) -> None:
+    """Устанавливает access и refresh token в httpOnly cookies."""
+    set_access_cookie(response, auth, settings)
     response.set_cookie(
         REFRESH_COOKIE_NAME,
         auth.refresh_token,
@@ -85,7 +90,7 @@ async def refresh(
 ) -> User:
     """Выдает новый access token по refresh cookie."""
     auth = await auth_service.refresh(refresh_token)
-    set_auth_cookies(response, auth, settings)
+    set_access_cookie(response, auth, settings)
     return auth.user
 
 

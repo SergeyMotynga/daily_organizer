@@ -45,11 +45,11 @@ tasks:
 
   backend:check:
     desc: Run all backend checks
-    deps:
-      - backend:lint
-      - backend:format:check
-      - backend:test
-      - backend:typecheck
+    cmds:
+      - task backend:lint
+      - task backend:format:check
+      - task backend:typecheck
+      - task backend:test
 
   docker:up:
     desc: Start PostgreSQL for local development

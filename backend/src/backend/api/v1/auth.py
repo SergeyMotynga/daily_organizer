@@ -4,8 +4,8 @@ from typing import Annotated
 
 from fastapi import APIRouter, Cookie, Depends, Response, status
 
+from backend.api.cookies import clear_auth_cookies, set_access_cookie, set_auth_cookies
 from backend.api.deps import (
-    ACCESS_COOKIE_NAME,
     REFRESH_COOKIE_NAME,
     get_auth_service,
     get_current_user,
@@ -14,42 +14,9 @@ from backend.core.config import Settings, get_settings
 from backend.models.user import User
 from backend.schemas.auth import ChangePasswordRequest, LoginRequest, RegisterRequest
 from backend.schemas.users import UserResponse
-from backend.services.auth import AuthResult, AuthService
+from backend.services.auth import AuthService
 
 router = APIRouter(prefix="/api/v1/auth", tags=["auth"])
-
-
-def set_access_cookie(response: Response, auth: AuthResult, settings: Settings) -> None:
-    """Устанавливает access token в httpOnly cookie."""
-    response.set_cookie(
-        ACCESS_COOKIE_NAME,
-        auth.access_token,
-        max_age=settings.jwt_access_token_ttl_minutes * 60,
-        httponly=True,
-        secure=settings.cookie_secure,
-        samesite=settings.cookie_samesite,
-        path="/",
-    )
-
-
-def set_auth_cookies(response: Response, auth: AuthResult, settings: Settings) -> None:
-    """Устанавливает access и refresh token в httpOnly cookies."""
-    set_access_cookie(response, auth, settings)
-    response.set_cookie(
-        REFRESH_COOKIE_NAME,
-        auth.refresh_token,
-        max_age=settings.jwt_refresh_token_ttl_days * 24 * 60 * 60,
-        httponly=True,
-        secure=settings.cookie_secure,
-        samesite=settings.cookie_samesite,
-        path="/",
-    )
-
-
-def clear_auth_cookies(response: Response) -> None:
-    """Удаляет access и refresh cookies."""
-    response.delete_cookie(ACCESS_COOKIE_NAME, path="/")
-    response.delete_cookie(REFRESH_COOKIE_NAME, path="/")
 
 
 @router.post("/register", response_model=UserResponse, status_code=status.HTTP_201_CREATED)

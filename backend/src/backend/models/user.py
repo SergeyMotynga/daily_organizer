@@ -1,6 +1,7 @@
 """ORM-модели пользователя и refresh-сессии."""
 
 from datetime import datetime
+from typing import TYPE_CHECKING
 from uuid import UUID
 
 from sqlalchemy import DateTime, ForeignKey, String, func, text
@@ -8,6 +9,9 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.types import Uuid
 
 from backend.db.base import Base
+
+if TYPE_CHECKING:
+    from backend.models.task import Task
 
 
 class User(Base):
@@ -34,6 +38,10 @@ class User(Base):
     deleted_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 
     sessions: Mapped[list["UserSession"]] = relationship(
+        back_populates="user",
+        cascade="all, delete-orphan",
+    )
+    tasks: Mapped[list["Task"]] = relationship(
         back_populates="user",
         cascade="all, delete-orphan",
     )

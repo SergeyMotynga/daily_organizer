@@ -64,10 +64,10 @@ def test_sessionmaker(test_engine: AsyncEngine) -> async_sessionmaker[AsyncSessi
 
 
 @pytest.fixture(autouse=True)
-async def clean_auth_tables(test_sessionmaker: async_sessionmaker[AsyncSession]) -> None:
-    """Очищает auth-таблицы перед каждым integration test."""
+async def clean_data_tables(test_sessionmaker: async_sessionmaker[AsyncSession]) -> None:
+    """Очищает пользовательские данные перед каждым integration test."""
     async with test_sessionmaker() as db:
-        await db.execute(text("TRUNCATE user_sessions, users RESTART IDENTITY CASCADE"))
+        await db.execute(text("TRUNCATE tasks, user_sessions, users RESTART IDENTITY CASCADE"))
         await db.commit()
 
 

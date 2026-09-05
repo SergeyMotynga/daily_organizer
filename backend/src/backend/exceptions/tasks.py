@@ -15,3 +15,7 @@ class TaskStatusNotFoundError(TaskError):
 
 class InvalidTaskTitleError(TaskError):
     """Название задачи не прошло валидацию."""
+
+
+class InvalidTimezoneError(TaskError):
+    """Timezone не является валидным IANA timezone name."""

@@ -3,6 +3,7 @@
 from backend.api.errors.responses import ErrorSpec
 from backend.exceptions.tasks import (
     InvalidTaskTitleError,
+    InvalidTimezoneError,
     TaskError,
     TaskNotFoundError,
     TaskStatusNotFoundError,
@@ -23,5 +24,10 @@ TASK_ERROR_SPECS: dict[type[TaskError], ErrorSpec] = {
         status_code=400,
         code="INVALID_TASK_TITLE",
         message="Название задачи обязательно и должно быть не длиннее 255 символов",
+    ),
+    InvalidTimezoneError: ErrorSpec(
+        status_code=400,
+        code="INVALID_TIMEZONE",
+        message="Некорректная timezone",
     ),
 }

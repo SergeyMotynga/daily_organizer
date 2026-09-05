@@ -31,3 +31,23 @@ Daily Organizer - pet-проект личного органайзера.
 - разработка идет только в feature/fix/chore/docs/test/refactor ветках от `develop`.
 
 Подробности: [Git flow](docs/development/git-flow.md).
+
+## Локальный запуск
+
+Backend:
+
+```powershell
+task docker:up
+task backend:run
+```
+
+Frontend:
+
+```powershell
+cd frontend
+npm install
+cd ..
+task frontend:dev
+```
+
+Frontend dev server запускается на `http://localhost:5173` и проксирует `/api` в локальный backend.

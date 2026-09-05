@@ -51,6 +51,24 @@ tasks:
       - task backend:typecheck
       - task backend:test
 
+  frontend:dev:
+    desc: Run frontend dev server
+    dir: frontend
+    cmds:
+      - npm run dev
+
+  frontend:build:
+    desc: Build frontend
+    dir: frontend
+    cmds:
+      - npm run build
+
+  frontend:check:
+    desc: Run frontend type checks
+    dir: frontend
+    cmds:
+      - npm run check
+
   docker:up:
     desc: Start PostgreSQL for local development
     cmds:

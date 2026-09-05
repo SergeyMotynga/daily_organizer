@@ -27,6 +27,7 @@ class Settings(BaseSettings):
     jwt_refresh_token_ttl_days: int = Field(alias="JWT_REFRESH_TOKEN_TTL_DAYS")
     cookie_secure: bool = Field(alias="COOKIE_SECURE")
     cookie_samesite: Literal["lax", "strict", "none"] = Field(alias="COOKIE_SAMESITE")
+    cors_origins: str = Field(alias="CORS_ORIGINS")
 
     model_config = SettingsConfigDict(
         env_file=(REPOSITORY_DIR / ".env", BACKEND_DIR / ".env"),
@@ -37,6 +38,11 @@ class Settings(BaseSettings):
     def is_dev_mode(self) -> bool:
         """Проверяет, разрешены ли dev-only endpoint-ы."""
         return self.app_env in {"local", "dev", "test"}
+
+    @property
+    def cors_origin_list(self) -> list[str]:
+        """Возвращает список origins из CSV-настройки CORS_ORIGINS."""
+        return [origin.strip() for origin in self.cors_origins.split(",") if origin.strip()]
 
 
 @lru_cache

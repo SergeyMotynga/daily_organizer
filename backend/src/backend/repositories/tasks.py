@@ -1,11 +1,12 @@
 """Repository для задач и статусов задач."""
 
+from datetime import date, datetime
 from uuid import UUID
 
-from sqlalchemy import Select, asc, desc, func, or_, select
+from sqlalchemy import Select, and_, asc, desc, func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from backend.domain.tasks import TaskSort
+from backend.domain.tasks import TaskSort, TaskStatusCode
 from backend.dto.common import PaginationParams
 from backend.dto.tasks import TaskCreateData, TaskListFilters
 from backend.models.task import Task, TaskStatus
@@ -80,6 +81,44 @@ class TaskRepository:
         )
         result = await self.db.execute(list_statement)
         return list(result.scalars().all()), int(total or 0)
+
+    async def list_today_view_candidates_for_user(
+        self,
+        *,
+        user_id: UUID,
+        today: date,
+        deadline_to: date,
+        completed_at_from: datetime,
+        completed_at_to: datetime,
+    ) -> list[Task]:
+        """Возвращает задачи пользователя, которые могут попасть в экран Сегодня."""
+        statement = (
+            select(Task)
+            .where(
+                Task.user_id == user_id,
+                or_(
+                    and_(
+                        Task.status_code == TaskStatusCode.todo.value,
+                        or_(
+                            Task.planned_date == today,
+                            Task.planned_date.is_(None),
+                            and_(
+                                Task.deadline_date.is_not(None),
+                                Task.deadline_date <= deadline_to,
+                            ),
+                        ),
+                    ),
+                    and_(
+                        Task.status_code == TaskStatusCode.done.value,
+                        Task.completed_at >= completed_at_from,
+                        Task.completed_at < completed_at_to,
+                    ),
+                ),
+            )
+            .order_by(asc(Task.deadline_date).nulls_last(), desc(Task.created_at), desc(Task.id))
+        )
+        result = await self.db.execute(statement)
+        return list(result.scalars().all())
 
     async def save_task(self, task: Task) -> Task:
         """Сохраняет изменения задачи и обновляет значения из БД."""

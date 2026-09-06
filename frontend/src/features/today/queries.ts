@@ -3,7 +3,8 @@ import { useQuery } from "@tanstack/react-query";
 import { getTodayView } from "./api";
 
 export const todayQueryKeys = {
-  view: (timezone: string) => ["task-views", "today", timezone] as const
+  all: ["task-views", "today"] as const,
+  view: (timezone: string) => [...todayQueryKeys.all, timezone] as const
 };
 
 export function useTodayViewQuery() {

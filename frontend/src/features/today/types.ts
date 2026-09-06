@@ -1,17 +1,6 @@
-export type TaskStatus = "todo" | "done" | "archived";
+import type { Task } from "../../entities/task/types";
 
-export type Task = {
-  id: string;
-  title: string;
-  description: string | null;
-  status: TaskStatus;
-  planned_date: string | null;
-  deadline_date: string | null;
-  completed_at: string | null;
-  archived_at: string | null;
-  created_at: string;
-  updated_at: string;
-};
+export type { Task } from "../../entities/task/types";
 
 export type TodayViewSummary = {
   total_active: number;

@@ -1,6 +1,7 @@
 import { Navigate, Route, Routes } from "react-router";
 
 import { AppShell } from "./layouts/app-shell";
+import { AuthLayout } from "./layouts/auth-layout";
 import { ProtectedLayout } from "./layouts/protected-layout";
 import { PublicOnlyLayout } from "./layouts/public-only-layout";
 import { ArchivePage } from "../pages/archive-page";
@@ -14,8 +15,10 @@ export function AppRoutes() {
     <Routes>
       <Route path="/" element={<Navigate to="/app/today" replace />} />
       <Route element={<PublicOnlyLayout />}>
-        <Route path="/login" element={<LoginPage />} />
-        <Route path="/register" element={<RegisterPage />} />
+        <Route element={<AuthLayout />}>
+          <Route path="/login" element={<LoginPage />} />
+          <Route path="/register" element={<RegisterPage />} />
+        </Route>
       </Route>
       <Route element={<ProtectedLayout />}>
         <Route path="/app" element={<AppShell />}>

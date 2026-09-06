@@ -1,3 +1,4 @@
+import { useState } from "react";
 import type { LucideIcon } from "lucide-react";
 import {
   AlertCircle,
@@ -9,6 +10,7 @@ import {
   RotateCcw
 } from "lucide-react";
 
+import { CreateTaskDrawer } from "../features/tasks/create-task-drawer";
 import { useTodayViewQuery } from "../features/today/queries";
 import type { Task, TodayViewResponse } from "../features/today/types";
 
@@ -109,7 +111,7 @@ function TodayContent({ data }: { data: TodayViewResponse }) {
   const { blocks, summary } = data;
   const summaryCards: SummaryCard[] = [
     {
-      label: "Сегодня",
+      label: "Активные",
       value: summary.total_active,
       icon: CalendarDays,
       tone: "primary"
@@ -200,52 +202,59 @@ function TodayContent({ data }: { data: TodayViewResponse }) {
 
 export function TodayPage() {
   const todayViewQuery = useTodayViewQuery();
+  const [isCreateTaskOpen, setIsCreateTaskOpen] = useState(false);
 
   return (
-    <section className="today-page">
-      <header className="today-page__header">
-        <div>
-          <h1>Сегодня</h1>
-          <p>{todayViewQuery.data ? formatPageDate(todayViewQuery.data.date) : "Ваш план на день"}</p>
-        </div>
-        <button
-          className="today-page__new-task"
-          type="button"
-          disabled
-          title="Создание задач появится в следующем этапе"
-        >
-          <Plus size={18} aria-hidden="true" />
-          Новая задача
-        </button>
-      </header>
-
-      {todayViewQuery.isPending ? (
-        <div className="today-loading" aria-live="polite" aria-label="Загрузка задач">
-          <div className="today-loading__cards" aria-hidden="true">
-            {Array.from({ length: 5 }, (_, index) => (
-              <span key={index} />
-            ))}
-          </div>
-          <div className="today-loading__panel" aria-hidden="true" />
-          <p>Загружаем задачи на сегодня…</p>
-        </div>
-      ) : null}
-
-      {todayViewQuery.isError ? (
-        <section className="today-error" role="alert">
-          <AlertCircle size={28} aria-hidden="true" />
+    <>
+      <section className="today-page">
+        <header className="today-page__header">
           <div>
-            <h2>Не удалось загрузить задачи</h2>
-            <p>Проверьте подключение и попробуйте ещё раз.</p>
+            <h1>Сегодня</h1>
+            <p>
+              {todayViewQuery.data ? formatPageDate(todayViewQuery.data.date) : "Ваш план на день"}
+            </p>
           </div>
-          <button type="button" onClick={() => void todayViewQuery.refetch()}>
-            <RotateCcw size={16} aria-hidden="true" />
-            Повторить
+          <button
+            className="today-page__new-task"
+            type="button"
+            onClick={() => setIsCreateTaskOpen(true)}
+          >
+            <Plus size={18} aria-hidden="true" />
+            Новая задача
           </button>
-        </section>
-      ) : null}
+        </header>
 
-      {todayViewQuery.data ? <TodayContent data={todayViewQuery.data} /> : null}
-    </section>
+        {todayViewQuery.isPending ? (
+          <div className="today-loading" aria-live="polite" aria-label="Загрузка задач">
+            <div className="today-loading__cards" aria-hidden="true">
+              {Array.from({ length: 5 }, (_, index) => (
+                <span key={index} />
+              ))}
+            </div>
+            <div className="today-loading__panel" aria-hidden="true" />
+            <p>Загружаем задачи на сегодня…</p>
+          </div>
+        ) : null}
+
+        {todayViewQuery.isError ? (
+          <section className="today-error" role="alert">
+            <AlertCircle size={28} aria-hidden="true" />
+            <div>
+              <h2>Не удалось загрузить задачи</h2>
+              <p>Проверьте подключение и попробуйте ещё раз.</p>
+            </div>
+            <button type="button" onClick={() => void todayViewQuery.refetch()}>
+              <RotateCcw size={16} aria-hidden="true" />
+              Повторить
+            </button>
+          </section>
+        ) : null}
+
+        {todayViewQuery.data ? <TodayContent data={todayViewQuery.data} /> : null}
+      </section>
+      {isCreateTaskOpen ? (
+        <CreateTaskDrawer onClose={() => setIsCreateTaskOpen(false)} />
+      ) : null}
+    </>
   );
 }

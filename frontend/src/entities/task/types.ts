@@ -19,6 +19,32 @@ export type TaskStatus = {
   sort_order: number;
 };
 
+export type TaskListPreset = "today" | "tomorrow" | "week" | "no_date" | "all";
+
+export type TaskSort =
+  | "created_at_desc"
+  | "created_at_asc"
+  | "planned_date_asc"
+  | "deadline_date_asc";
+
+export type TaskListParams = {
+  preset: TaskListPreset;
+  statuses: TaskStatusCode[];
+  q: string;
+  sort: TaskSort;
+  limit: number;
+  offset: number;
+};
+
+export type TaskListResponse = {
+  items: Task[];
+  pagination: {
+    limit: number;
+    offset: number;
+    total: number;
+  };
+};
+
 export type CreateTaskPayload = {
   title: string;
   description: string | null;

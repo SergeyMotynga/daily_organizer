@@ -1,12 +1,12 @@
-import { Check, LogOut } from "lucide-react";
+import { Archive, CalendarDays, CalendarRange, Check, LogOut } from "lucide-react";
 import { NavLink, Outlet, useNavigate } from "react-router";
 
 import { useCurrentUserQuery, useLogoutMutation } from "../../features/auth/session";
 
 const navigationItems = [
-  { to: "/app/today", label: "Сегодня" },
-  { to: "/app/planning", label: "Планирование" },
-  { to: "/app/archive", label: "Архив" }
+  { to: "/app/today", label: "Сегодня", icon: CalendarDays },
+  { to: "/app/planning", label: "Планирование", icon: CalendarRange },
+  { to: "/app/archive", label: "Архив", icon: Archive }
 ];
 
 export function AppShell() {
@@ -36,15 +36,16 @@ export function AppShell() {
           <span className="version-badge">v0.1</span>
         </div>
         <nav className="app-shell__nav">
-          {navigationItems.map((item) => (
+          {navigationItems.map(({ to, label, icon: Icon }) => (
             <NavLink
-              key={item.to}
-              to={item.to}
+              key={to}
+              to={to}
               className={({ isActive }) =>
                 isActive ? "app-shell__nav-link app-shell__nav-link--active" : "app-shell__nav-link"
               }
             >
-              {item.label}
+              <Icon size={17} strokeWidth={1.9} aria-hidden="true" />
+              <span>{label}</span>
             </NavLink>
           ))}
         </nav>

@@ -1,14 +1,24 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
-import type { UpdateTaskPayload } from "../../entities/task/types";
+import type { TaskListParams, UpdateTaskPayload } from "../../entities/task/types";
 import { todayQueryKeys } from "../today/queries";
-import { createTask, deleteTask, getTask, getTaskStatuses, updateTask } from "./api";
+import { createTask, deleteTask, getTask, getTasks, getTaskStatuses, updateTask } from "./api";
 
 export const taskQueryKeys = {
   all: ["tasks"] as const,
+  lists: ["tasks", "list"] as const,
+  list: (params: TaskListParams) => ["tasks", "list", params] as const,
   statuses: ["tasks", "statuses"] as const,
   detail: (taskId: string) => ["tasks", "detail", taskId] as const
 };
+
+export function useTasksQuery(params: TaskListParams) {
+  return useQuery({
+    queryKey: taskQueryKeys.list(params),
+    queryFn: () => getTasks(params),
+    placeholderData: (previousData) => previousData
+  });
+}
 
 export function useTaskStatusesQuery() {
   return useQuery({
@@ -31,7 +41,10 @@ export function useCreateTaskMutation() {
   return useMutation({
     mutationFn: createTask,
     onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: todayQueryKeys.all });
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: taskQueryKeys.lists }),
+        queryClient.invalidateQueries({ queryKey: todayQueryKeys.all })
+      ]);
     }
   });
 }
@@ -44,7 +57,10 @@ export function useUpdateTaskMutation() {
       updateTask(taskId, payload),
     onSuccess: async (task) => {
       queryClient.setQueryData(taskQueryKeys.detail(task.id), task);
-      await queryClient.invalidateQueries({ queryKey: todayQueryKeys.all });
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: taskQueryKeys.lists }),
+        queryClient.invalidateQueries({ queryKey: todayQueryKeys.all })
+      ]);
     }
   });
 }
@@ -56,7 +72,10 @@ export function useDeleteTaskMutation() {
     mutationFn: deleteTask,
     onSuccess: async (_data, taskId) => {
       queryClient.removeQueries({ queryKey: taskQueryKeys.detail(taskId) });
-      await queryClient.invalidateQueries({ queryKey: todayQueryKeys.all });
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: taskQueryKeys.lists }),
+        queryClient.invalidateQueries({ queryKey: todayQueryKeys.all })
+      ]);
     }
   });
 }

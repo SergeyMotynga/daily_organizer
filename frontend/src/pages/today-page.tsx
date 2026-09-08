@@ -5,6 +5,7 @@ import {
   Archive,
   CalendarDays,
   CheckCircle2,
+  ChevronRight,
   Clock3,
   Inbox,
   Plus,
@@ -155,6 +156,68 @@ function TaskGroup({
   );
 }
 
+function AttentionCard({ todayDeadline, overdue }: { todayDeadline: number; overdue: number }) {
+  return (
+    <section className="today-compact-card today-attention-card">
+      <header>
+        <h2>Требует внимания</h2>
+        <AlertCircle size={18} aria-hidden="true" />
+      </header>
+      <div className="today-attention-row">
+        <span>Дедлайн сегодня</span>
+        <strong className="today-attention-row--warning">{todayDeadline}</strong>
+        <ChevronRight size={16} aria-hidden="true" />
+      </div>
+      <div className="today-attention-row">
+        <span>Просрочено</span>
+        <strong className="today-attention-row--danger">{overdue}</strong>
+        <ChevronRight size={16} aria-hidden="true" />
+      </div>
+    </section>
+  );
+}
+
+function CompactTaskCard({
+  title,
+  tasks,
+  today,
+  showDeadline = false,
+  onOpenTask
+}: {
+  title: string;
+  tasks: Task[];
+  today: string;
+  showDeadline?: boolean;
+  onOpenTask: (taskId: string) => void;
+}) {
+  const visibleTasks = tasks.slice(0, 3);
+
+  return (
+    <section className="today-compact-card">
+      <header>
+        <h2>{title}</h2>
+        <span>{tasks.length}</span>
+      </header>
+      {visibleTasks.length > 0 ? (
+        <ul className="today-compact-list">
+          {visibleTasks.map((task) => (
+            <li key={task.id}>
+              <button type="button" onClick={() => onOpenTask(task.id)}>
+                {task.title}
+              </button>
+              {showDeadline && task.deadline_date ? (
+                <span>{formatTaskDate(task.deadline_date, today)}</span>
+              ) : null}
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <p className="today-compact-card__empty">Задач пока нет.</p>
+      )}
+    </section>
+  );
+}
+
 function TodayContent({
   data,
   pendingTaskId,
@@ -169,8 +232,8 @@ function TodayContent({
   const { blocks, summary } = data;
   const summaryCards: SummaryCard[] = [
     {
-      label: "Активные",
-      value: summary.total_active,
+      label: "Сегодня",
+      value: blocks.planned_today.length,
       icon: CalendarDays,
       tone: "primary"
     },
@@ -231,43 +294,22 @@ function TodayContent({
           </div>
 
           <aside className="today-board__aside" aria-label="Дополнительные блоки задач">
-            <TaskGroup
-              title="Дедлайн сегодня"
-              tasks={blocks.today_deadline}
-              today={data.date}
-              tone="warning"
-              emptyMessage="Срочных дедлайнов нет."
-              pendingTaskId={pendingTaskId}
-              onOpenTask={onOpenTask}
-              onStatusChange={onStatusChange}
+            <AttentionCard
+              todayDeadline={blocks.today_deadline.length}
+              overdue={blocks.overdue.length}
             />
-            <TaskGroup
-              title="Просрочено"
-              tasks={blocks.overdue}
-              today={data.date}
-              tone="danger"
-              emptyMessage="Просроченных задач нет."
-              pendingTaskId={pendingTaskId}
-              onOpenTask={onOpenTask}
-              onStatusChange={onStatusChange}
-            />
-            <TaskGroup
+            <CompactTaskCard
               title="Входящие"
               tasks={blocks.inbox}
               today={data.date}
-              emptyMessage="Входящих задач нет."
-              pendingTaskId={pendingTaskId}
               onOpenTask={onOpenTask}
-              onStatusChange={onStatusChange}
             />
-            <TaskGroup
+            <CompactTaskCard
               title="Скоро дедлайн"
               tasks={blocks.soon_deadline}
               today={data.date}
-              emptyMessage="Ближайших дедлайнов нет."
-              pendingTaskId={pendingTaskId}
+              showDeadline
               onOpenTask={onOpenTask}
-              onStatusChange={onStatusChange}
             />
           </aside>
         </div>

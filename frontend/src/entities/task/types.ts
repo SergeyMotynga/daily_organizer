@@ -26,3 +26,5 @@ export type CreateTaskPayload = {
   planned_date: string | null;
   deadline_date: string | null;
 };
+
+export type UpdateTaskPayload = Partial<CreateTaskPayload>;

@@ -832,7 +832,7 @@ select {
 
 .today-task {
   display: grid;
-  grid-template-columns: 18px minmax(0, 1fr) auto;
+  grid-template-columns: 18px minmax(0, 1fr) auto 28px;
   gap: 10px;
   align-items: center;
   min-height: 48px;
@@ -850,9 +850,12 @@ select {
   width: 16px;
   height: 16px;
   place-items: center;
+  padding: 0;
   border: 1px solid var(--color-border-strong);
   border-radius: 4px;
+  background: var(--color-surface);
   color: var(--color-brand);
+  cursor: pointer;
 }
 
 .today-task--done .today-task__check {
@@ -860,11 +863,17 @@ select {
 }
 
 .today-task__title {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
+  text-align: left;
   white-space: nowrap;
   font-weight: 600;
+  cursor: pointer;
 }
 
 .today-task--done .today-task__title {
@@ -893,6 +902,52 @@ select {
 .today-task__date--muted {
   color: var(--color-text-soft);
   font-weight: 500;
+}
+
+.today-task__archive {
+  display: inline-grid;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  place-items: center;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--color-text-soft);
+  cursor: pointer;
+  opacity: 0.45;
+}
+
+.today-task:hover .today-task__archive,
+.today-task__archive:hover,
+.today-task__archive:focus-visible {
+  background: var(--color-surface-soft);
+  color: var(--color-text-muted);
+  opacity: 1;
+}
+
+.today-task__check:disabled,
+.today-task__title:disabled,
+.today-task__archive:disabled {
+  cursor: wait;
+  opacity: 0.45;
+}
+
+.today-task__check:focus-visible,
+.today-task__title:focus-visible,
+.today-task__archive:focus-visible {
+  outline: 0;
+  box-shadow: 0 0 0 3px var(--focus-ring);
+}
+
+.today-quick-error {
+  margin-bottom: 14px;
+  padding: 10px 14px;
+  border: 1px solid #f0d3d7;
+  border-radius: 8px;
+  background: var(--color-danger-soft);
+  color: var(--color-danger);
+  font-size: 12px;
 }
 
 .today-group__empty {
@@ -1269,6 +1324,112 @@ select {
   background: var(--color-surface);
 }
 
+.task-edit-state {
+  display: grid;
+  justify-items: center;
+  align-content: center;
+  gap: 10px;
+  padding: 32px;
+  color: var(--color-text-muted);
+  text-align: center;
+}
+
+.task-edit-state p {
+  margin: 0;
+  font-size: 13px;
+}
+
+.task-edit-state__loader {
+  width: 28px;
+  height: 28px;
+  border: 3px solid var(--color-border);
+  border-top-color: var(--color-brand);
+  border-radius: 50%;
+  animation: task-edit-spin 0.8s linear infinite;
+}
+
+.task-edit-state--error {
+  color: var(--color-danger);
+}
+
+.task-edit-state--error strong {
+  color: var(--color-text);
+}
+
+.task-edit-state--error button {
+  min-height: 36px;
+  padding: 0 14px;
+  border: 1px solid var(--color-border-strong);
+  border-radius: 7px;
+  background: var(--color-surface);
+  color: var(--color-primary);
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.task-edit-delete {
+  padding-top: 4px;
+  border-top: 1px solid var(--color-border);
+}
+
+.task-edit-delete__trigger {
+  display: inline-flex;
+  min-height: 36px;
+  align-items: center;
+  gap: 8px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--color-danger);
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.task-edit-delete__confirm {
+  display: grid;
+  gap: 10px;
+  padding: 14px;
+  border: 1px solid #f0d3d7;
+  border-radius: 8px;
+  background: var(--color-danger-soft);
+  color: var(--color-danger);
+  font-size: 12px;
+}
+
+.task-edit-delete__confirm > div {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+.task-edit-delete__confirm button {
+  min-height: 32px;
+  padding: 0 12px;
+  border: 1px solid var(--color-border-strong);
+  border-radius: 7px;
+  background: var(--color-surface);
+  color: var(--color-primary);
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.task-edit-delete__confirm .task-edit-delete__danger {
+  border-color: var(--color-danger);
+  background: var(--color-danger);
+  color: var(--color-surface);
+}
+
+.task-edit-delete__confirm button:disabled {
+  cursor: wait;
+  opacity: 0.62;
+}
+
+.task-edit-delete__confirm small {
+  color: var(--color-danger);
+}
+
 .task-create-button {
   min-height: 42px;
   border-radius: 8px;
@@ -1314,6 +1475,12 @@ select {
 
   to {
     background-position: 0 0;
+  }
+}
+
+@keyframes task-edit-spin {
+  to {
+    transform: rotate(360deg);
   }
 }
 
@@ -1448,6 +1615,10 @@ p {
   .today-loading__cards span,
   .today-loading__panel {
     transition: none;
+    animation: none;
+  }
+
+  .task-edit-state__loader {
     animation: none;
   }
 }

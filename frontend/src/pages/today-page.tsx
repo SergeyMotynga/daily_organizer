@@ -2,6 +2,7 @@ import { useState } from "react";
 import type { LucideIcon } from "lucide-react";
 import {
   AlertCircle,
+  Archive,
   CalendarDays,
   CheckCircle2,
   Clock3,
@@ -10,7 +11,10 @@ import {
   RotateCcw
 } from "lucide-react";
 
+import type { TaskStatusCode } from "../entities/task/types";
 import { CreateTaskDrawer } from "../features/tasks/create-task-drawer";
+import { EditTaskDrawer } from "../features/tasks/edit-task-drawer";
+import { useUpdateTaskMutation } from "../features/tasks/queries";
 import { useTodayViewQuery } from "../features/today/queries";
 import type { Task, TodayViewResponse } from "../features/today/types";
 
@@ -27,6 +31,9 @@ type TaskGroupProps = {
   today: string;
   tone?: "default" | "danger" | "warning" | "success";
   emptyMessage: string;
+  pendingTaskId: string | null;
+  onOpenTask: (taskId: string) => void;
+  onStatusChange: (taskId: string, status: TaskStatusCode) => void;
 };
 
 function formatPageDate(date: string): string {
@@ -59,16 +66,37 @@ function formatTaskDate(date: string, today: string): string {
   }).format(new Date(`${date}T00:00:00Z`));
 }
 
-function TaskRow({ task, today }: { task: Task; today: string }) {
+function TaskRow({
+  task,
+  today,
+  isPending,
+  onOpen,
+  onStatusChange
+}: {
+  task: Task;
+  today: string;
+  isPending: boolean;
+  onOpen: () => void;
+  onStatusChange: (status: TaskStatusCode) => void;
+}) {
   const isDone = task.status === "done";
   const displayDate = task.deadline_date ?? task.planned_date;
 
   return (
     <li className={isDone ? "today-task today-task--done" : "today-task"}>
-      <span className="today-task__check" aria-hidden="true">
+      <button
+        className="today-task__check"
+        type="button"
+        aria-label={isDone ? `Вернуть в активные: ${task.title}` : `Отметить выполненной: ${task.title}`}
+        title={isDone ? "Вернуть в активные" : "Отметить выполненной"}
+        onClick={() => onStatusChange(isDone ? "todo" : "done")}
+        disabled={isPending}
+      >
         {isDone ? <CheckCircle2 size={17} /> : null}
-      </span>
-      <span className="today-task__title">{task.title}</span>
+      </button>
+      <button className="today-task__title" type="button" onClick={onOpen} disabled={isPending}>
+        {task.title}
+      </button>
       {displayDate ? (
         <span className="today-task__date">
           <CalendarDays size={15} />
@@ -77,6 +105,16 @@ function TaskRow({ task, today }: { task: Task; today: string }) {
       ) : (
         <span className="today-task__date today-task__date--muted">Без даты</span>
       )}
+      <button
+        className="today-task__archive"
+        type="button"
+        aria-label={`Архивировать: ${task.title}`}
+        title="Архивировать"
+        onClick={() => onStatusChange("archived")}
+        disabled={isPending}
+      >
+        <Archive size={15} aria-hidden="true" />
+      </button>
     </li>
   );
 }
@@ -86,7 +124,10 @@ function TaskGroup({
   tasks,
   today,
   tone = "default",
-  emptyMessage
+  emptyMessage,
+  pendingTaskId,
+  onOpenTask,
+  onStatusChange
 }: TaskGroupProps) {
   return (
     <section className={`today-group today-group--${tone}`}>
@@ -97,7 +138,14 @@ function TaskGroup({
       {tasks.length > 0 ? (
         <ul className="today-task-list">
           {tasks.map((task) => (
-            <TaskRow key={task.id} task={task} today={today} />
+            <TaskRow
+              key={task.id}
+              task={task}
+              today={today}
+              isPending={pendingTaskId === task.id}
+              onOpen={() => onOpenTask(task.id)}
+              onStatusChange={(status) => onStatusChange(task.id, status)}
+            />
           ))}
         </ul>
       ) : (
@@ -107,7 +155,17 @@ function TaskGroup({
   );
 }
 
-function TodayContent({ data }: { data: TodayViewResponse }) {
+function TodayContent({
+  data,
+  pendingTaskId,
+  onOpenTask,
+  onStatusChange
+}: {
+  data: TodayViewResponse;
+  pendingTaskId: string | null;
+  onOpenTask: (taskId: string) => void;
+  onStatusChange: (taskId: string, status: TaskStatusCode) => void;
+}) {
   const { blocks, summary } = data;
   const summaryCards: SummaryCard[] = [
     {
@@ -156,6 +214,9 @@ function TodayContent({ data }: { data: TodayViewResponse }) {
               tasks={blocks.planned_today}
               today={data.date}
               emptyMessage="Запланированных задач нет."
+              pendingTaskId={pendingTaskId}
+              onOpenTask={onOpenTask}
+              onStatusChange={onStatusChange}
             />
             <TaskGroup
               title="Выполнено сегодня"
@@ -163,6 +224,9 @@ function TodayContent({ data }: { data: TodayViewResponse }) {
               today={data.date}
               tone="success"
               emptyMessage="Выполненных задач пока нет."
+              pendingTaskId={pendingTaskId}
+              onOpenTask={onOpenTask}
+              onStatusChange={onStatusChange}
             />
           </div>
 
@@ -173,6 +237,9 @@ function TodayContent({ data }: { data: TodayViewResponse }) {
               today={data.date}
               tone="warning"
               emptyMessage="Срочных дедлайнов нет."
+              pendingTaskId={pendingTaskId}
+              onOpenTask={onOpenTask}
+              onStatusChange={onStatusChange}
             />
             <TaskGroup
               title="Просрочено"
@@ -180,18 +247,27 @@ function TodayContent({ data }: { data: TodayViewResponse }) {
               today={data.date}
               tone="danger"
               emptyMessage="Просроченных задач нет."
+              pendingTaskId={pendingTaskId}
+              onOpenTask={onOpenTask}
+              onStatusChange={onStatusChange}
             />
             <TaskGroup
               title="Входящие"
               tasks={blocks.inbox}
               today={data.date}
               emptyMessage="Входящих задач нет."
+              pendingTaskId={pendingTaskId}
+              onOpenTask={onOpenTask}
+              onStatusChange={onStatusChange}
             />
             <TaskGroup
               title="Скоро дедлайн"
               tasks={blocks.soon_deadline}
               today={data.date}
               emptyMessage="Ближайших дедлайнов нет."
+              pendingTaskId={pendingTaskId}
+              onOpenTask={onOpenTask}
+              onStatusChange={onStatusChange}
             />
           </aside>
         </div>
@@ -202,7 +278,16 @@ function TodayContent({ data }: { data: TodayViewResponse }) {
 
 export function TodayPage() {
   const todayViewQuery = useTodayViewQuery();
+  const quickUpdateMutation = useUpdateTaskMutation();
   const [isCreateTaskOpen, setIsCreateTaskOpen] = useState(false);
+  const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
+  const pendingTaskId = quickUpdateMutation.isPending
+    ? quickUpdateMutation.variables.taskId
+    : null;
+
+  function handleQuickStatusChange(taskId: string, status: TaskStatusCode) {
+    quickUpdateMutation.mutate({ taskId, payload: { status } });
+  }
 
   return (
     <>
@@ -250,10 +335,26 @@ export function TodayPage() {
           </section>
         ) : null}
 
-        {todayViewQuery.data ? <TodayContent data={todayViewQuery.data} /> : null}
+        {quickUpdateMutation.isError ? (
+          <div className="today-quick-error" role="alert">
+            Не удалось изменить статус задачи. Попробуйте ещё раз.
+          </div>
+        ) : null}
+
+        {todayViewQuery.data ? (
+          <TodayContent
+            data={todayViewQuery.data}
+            pendingTaskId={pendingTaskId}
+            onOpenTask={setSelectedTaskId}
+            onStatusChange={handleQuickStatusChange}
+          />
+        ) : null}
       </section>
       {isCreateTaskOpen ? (
         <CreateTaskDrawer onClose={() => setIsCreateTaskOpen(false)} />
+      ) : null}
+      {selectedTaskId ? (
+        <EditTaskDrawer taskId={selectedTaskId} onClose={() => setSelectedTaskId(null)} />
       ) : null}
     </>
   );

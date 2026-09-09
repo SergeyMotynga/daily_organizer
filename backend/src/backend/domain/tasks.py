@@ -10,6 +10,15 @@ class TaskStatusCode(StrEnum):
     done = "done"
 
 
+class TaskRecurrenceTypeCode(StrEnum):
+    """Коды поддерживаемых типов повторения задач."""
+
+    none = "none"
+    daily = "daily"
+    weekdays = "weekdays"
+    weekly = "weekly"
+
+
 class TaskSort(StrEnum):
     """Поддерживаемые сортировки списка задач."""
 

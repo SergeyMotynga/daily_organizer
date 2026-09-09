@@ -5,7 +5,6 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, Query
 
 from backend.api.deps import get_current_user, get_task_service
-from backend.models.task import Task
 from backend.models.user import User
 from backend.schemas.task_views import (
     TodayViewBlocksResponse,
@@ -13,7 +12,7 @@ from backend.schemas.task_views import (
     TodayViewSummaryResponse,
 )
 from backend.schemas.tasks import TaskResponse
-from backend.services.tasks import TaskService, TodayViewResult
+from backend.services.tasks import TaskService, TodayTaskResult, TodayViewResult
 
 router = APIRouter(prefix="/api/v1/task-views", tags=["task-views"])
 
@@ -50,6 +49,11 @@ def _today_view_response(result: TodayViewResult) -> TodayViewResponse:
     )
 
 
-def _task_responses(tasks: list[Task]) -> list[TaskResponse]:
-    """Преобразует ORM-задачи в HTTP-схемы задач."""
-    return [TaskResponse.model_validate(task) for task in tasks]
+def _task_responses(tasks: list[TodayTaskResult]) -> list[TaskResponse]:
+    """Преобразует задачи дня в HTTP-схемы с вычисленным статусом."""
+    return [
+        TaskResponse.model_validate(item.task).model_copy(
+            update={"status": item.status, "occurrence_date": item.occurrence_date}
+        )
+        for item in tasks
+    ]

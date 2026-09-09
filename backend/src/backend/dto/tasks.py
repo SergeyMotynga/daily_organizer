@@ -3,7 +3,13 @@
 from dataclasses import dataclass
 from datetime import date, time
 
-from backend.domain.tasks import TaskDeadlinePreset, TaskListPreset, TaskSort, TaskStatusCode
+from backend.domain.tasks import (
+    TaskDeadlinePreset,
+    TaskListPreset,
+    TaskRecurrenceTypeCode,
+    TaskSort,
+    TaskStatusCode,
+)
 
 
 @dataclass(frozen=True)
@@ -15,6 +21,11 @@ class TaskCreateData:
     planned_date: date | None = None
     planned_time: time | None = None
     deadline_date: date | None = None
+    deadline_time: time | None = None
+    recurrence_type_code: TaskRecurrenceTypeCode = TaskRecurrenceTypeCode.none
+    recurrence_interval: int = 1
+    recurrence_start_date: date | None = None
+    recurrence_end_date: date | None = None
     status: TaskStatusCode | None = None
 
 
@@ -28,6 +39,11 @@ class TaskUpdateData:
     planned_date: date | None = None
     planned_time: time | None = None
     deadline_date: date | None = None
+    deadline_time: time | None = None
+    recurrence_type_code: TaskRecurrenceTypeCode | None = None
+    recurrence_interval: int | None = None
+    recurrence_start_date: date | None = None
+    recurrence_end_date: date | None = None
     status: TaskStatusCode | None = None
     archived: bool = False
 
@@ -63,5 +79,8 @@ class TaskListFilters:
     deadline_date: date | None = None
     deadline_date_from: date | None = None
     deadline_date_to: date | None = None
+    overdue_date: date | None = None
+    overdue_time: time | None = None
+    recurrence_date: date | None = None
     q: str | None = None
     sort: TaskSort = TaskSort.created_at_desc

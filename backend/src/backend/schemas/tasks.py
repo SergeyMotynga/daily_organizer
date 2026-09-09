@@ -2,11 +2,19 @@
 
 import re
 from datetime import date, datetime, time
+from typing import Self
 from uuid import UUID
 
-from pydantic import BaseModel, ConfigDict, Field, field_serializer, field_validator
+from pydantic import (
+    BaseModel,
+    ConfigDict,
+    Field,
+    field_serializer,
+    field_validator,
+    model_validator,
+)
 
-from backend.domain.tasks import TaskStatusCode
+from backend.domain.tasks import TaskRecurrenceTypeCode, TaskStatusCode
 from backend.schemas.common import PaginationMeta
 
 
@@ -32,8 +40,8 @@ def normalize_description(value: str | None) -> str | None:
     return stripped or None
 
 
-def validate_planned_time_format(value: str | time | None) -> str | time | None:
-    """Проверяет строковый формат локального планового времени."""
+def validate_local_time_format(value: str | time | None) -> str | time | None:
+    """Проверяет строковый формат локального времени задачи."""
     if isinstance(value, str) and re.fullmatch(r"(?:[01]\d|2[0-3]):[0-5]\d", value) is None:
         msg = "Время должно быть в формате HH:MM"
         raise ValueError(msg)
@@ -48,13 +56,29 @@ class TaskCreateRequest(BaseModel):
     planned_date: date | None = None
     planned_time: time | None = None
     deadline_date: date | None = None
+    deadline_time: time | None = None
+    recurrence_type_code: TaskRecurrenceTypeCode = TaskRecurrenceTypeCode.none
+    recurrence_interval: int = Field(default=1, ge=1)
+    recurrence_start_date: date | None = None
+    recurrence_end_date: date | None = None
     status: TaskStatusCode | None = None
 
     _trim_title = field_validator("title")(trim_text)
     _normalize_description = field_validator("description")(normalize_description)
     _validate_planned_time = field_validator("planned_time", mode="before")(
-        validate_planned_time_format
+        validate_local_time_format
     )
+    _validate_deadline_time = field_validator("deadline_time", mode="before")(
+        validate_local_time_format
+    )
+
+    @model_validator(mode="after")
+    def validate_deadline_time_dependency(self) -> Self:
+        """Не разрешает время дедлайна без даты дедлайна."""
+        if self.deadline_time is not None and self.deadline_date is None:
+            msg = "Время дедлайна можно указать только вместе с датой"
+            raise ValueError(msg)
+        return self
 
     model_config = ConfigDict(extra="forbid")
 
@@ -67,13 +91,21 @@ class TaskUpdateRequest(BaseModel):
     planned_date: date | None = None
     planned_time: time | None = None
     deadline_date: date | None = None
+    deadline_time: time | None = None
+    recurrence_type_code: TaskRecurrenceTypeCode | None = None
+    recurrence_interval: int | None = Field(default=None, ge=1)
+    recurrence_start_date: date | None = None
+    recurrence_end_date: date | None = None
     status: TaskStatusCode | None = None
     archived: bool = False
 
     _trim_title = field_validator("title")(trim_text)
     _normalize_description = field_validator("description")(normalize_description)
     _validate_planned_time = field_validator("planned_time", mode="before")(
-        validate_planned_time_format
+        validate_local_time_format
+    )
+    _validate_deadline_time = field_validator("deadline_time", mode="before")(
+        validate_local_time_format
     )
 
     model_config = ConfigDict(extra="forbid")
@@ -89,14 +121,20 @@ class TaskResponse(BaseModel):
     planned_date: date | None
     planned_time: time | None
     deadline_date: date | None
+    deadline_time: time | None
+    recurrence_type_code: TaskRecurrenceTypeCode
+    recurrence_interval: int
+    recurrence_start_date: date | None
+    recurrence_end_date: date | None
+    occurrence_date: date | None = None
     completed_at: datetime | None
     archived_at: datetime | None
     created_at: datetime
     updated_at: datetime
 
-    @field_serializer("planned_time", when_used="json")
-    def serialize_planned_time(self, value: time | None) -> str | None:
-        """Сериализует плановое время без секунд."""
+    @field_serializer("planned_time", "deadline_time", when_used="json")
+    def serialize_local_time(self, value: time | None) -> str | None:
+        """Сериализует локальное время без секунд."""
         return value.strftime("%H:%M") if value is not None else None
 
     model_config = ConfigDict(from_attributes=True, populate_by_name=True)
@@ -107,3 +145,15 @@ class TaskListResponse(BaseModel):
 
     items: list[TaskResponse]
     pagination: PaginationMeta
+
+
+class TaskRecurrenceCompletionResponse(BaseModel):
+    """Публичное представление выполнения повторения задачи."""
+
+    id: UUID
+    task_id: UUID
+    occurrence_date: date
+    completed_at: datetime
+    created_at: datetime
+
+    model_config = ConfigDict(from_attributes=True)

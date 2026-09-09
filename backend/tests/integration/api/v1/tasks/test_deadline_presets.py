@@ -1,6 +1,6 @@
 """Интеграционные тесты пресетов дедлайна списка задач."""
 
-from datetime import timedelta
+from datetime import UTC, datetime, timedelta
 from zoneinfo import ZoneInfo
 
 import pytest
@@ -59,6 +59,39 @@ async def test_list_tasks_applies_deadline_presets(client: AsyncClient) -> None:
     assert titles(today_response.json()) == ["Сегодня"]
     assert soon.status_code == 200
     assert set(titles(soon.json())) == {"Завтра", "Через три дня"}
+
+
+@pytest.mark.anyio
+async def test_overdue_preset_uses_deadline_time_today(
+    client: AsyncClient,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Просрочка сегодня учитывает время, а дедлайн без времени ждет конца дня."""
+    await auth_client(client)
+    fixed_now = datetime(2026, 9, 10, 12, 0, tzinfo=UTC)
+    monkeypatch.setattr("backend.services.tasks.utc_now", lambda: fixed_now)
+
+    await create_task(
+        client,
+        {"title": "Время прошло", "deadline_date": "2026-09-10", "deadline_time": "11:00"},
+    )
+    await create_task(
+        client,
+        {"title": "Время впереди", "deadline_date": "2026-09-10", "deadline_time": "13:00"},
+    )
+    await create_task(client, {"title": "Без времени", "deadline_date": "2026-09-10"})
+
+    overdue = await client.get("/api/v1/tasks?deadline_preset=overdue&timezone=UTC")
+    today_response = await client.get("/api/v1/tasks?deadline_preset=today&timezone=UTC")
+
+    assert overdue.status_code == 200
+    assert titles(overdue.json()) == ["Время прошло"]
+    assert today_response.status_code == 200
+    assert set(titles(today_response.json())) == {
+        "Время прошло",
+        "Время впереди",
+        "Без времени",
+    }
 
 
 @pytest.mark.anyio

@@ -1,4 +1,4 @@
-export type TaskStatusCode = "todo" | "done" | "archived";
+export type TaskStatusCode = "todo" | "done";
 
 export type Task = {
   id: string;
@@ -32,6 +32,7 @@ export type TaskSort =
 export type TaskListParams = {
   preset: TaskListPreset;
   statuses: TaskStatusCode[];
+  archived?: boolean;
   deadline_date?: string;
   deadline_preset?: TaskDeadlinePreset;
   timezone?: string;
@@ -59,4 +60,6 @@ export type CreateTaskPayload = {
   deadline_date: string | null;
 };
 
-export type UpdateTaskPayload = Partial<CreateTaskPayload>;
+export type UpdateTaskPayload = Partial<CreateTaskPayload> & {
+  archived?: boolean;
+};

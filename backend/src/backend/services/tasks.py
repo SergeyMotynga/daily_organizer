@@ -172,6 +172,8 @@ class TaskService:
             status = await self._get_active_status_code(data.status)
             task.status_code = status.value
             self._apply_status_timestamps(task, status)
+        if data.has("archived"):
+            task.archived_at = utc_now() if data.archived else None
 
         try:
             task = await self.tasks.save_task(task)
@@ -245,6 +247,7 @@ class TaskService:
 
         return TaskListFilters(
             statuses=statuses,
+            archived=query.archived,
             planned_date_from=planned_date_from,
             planned_date_to=planned_date_to,
             planned_date_is_null=planned_date_is_null,
@@ -260,11 +263,8 @@ class TaskService:
         now = utc_now()
         if status == TaskStatusCode.done:
             task.completed_at = now
-        elif status == TaskStatusCode.archived:
-            task.archived_at = now
         elif status == TaskStatusCode.todo:
             task.completed_at = None
-            task.archived_at = None
 
     def _build_today_view_blocks(
         self,

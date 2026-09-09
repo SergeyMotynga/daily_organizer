@@ -89,18 +89,79 @@ async def test_patch_status_done_then_todo(client: AsyncClient) -> None:
 
 
 @pytest.mark.anyio
-async def test_patch_status_archived_preserves_completed_at(client: AsyncClient) -> None:
-    """Архивация ставит archived_at и не стирает факт выполнения."""
+@pytest.mark.parametrize("initial_status", ["todo", "done"])
+async def test_archive_and_restore_preserve_status(
+    client: AsyncClient,
+    initial_status: str,
+) -> None:
+    """Архивация и восстановление не меняют состояние выполнения."""
     await auth_client(client)
-    task = await create_task(client, {"title": "Выполненная", "status": "done"})
+    task = await create_task(client, {"title": "Задача", "status": initial_status})
 
-    response = await client.patch(f"/api/v1/tasks/{task['id']}", json={"status": "archived"})
+    archive_response = await client.patch(
+        f"/api/v1/tasks/{task['id']}",
+        json={"archived": True},
+    )
 
-    assert response.status_code == 200
-    archived_task = response.json()
-    assert archived_task["status"] == "archived"
+    assert archive_response.status_code == 200
+    archived_task = archive_response.json()
+    assert archived_task["status"] == initial_status
     assert archived_task["completed_at"] == task["completed_at"]
     assert archived_task["archived_at"] is not None
+
+    restore_response = await client.patch(
+        f"/api/v1/tasks/{task['id']}",
+        json={"archived": False},
+    )
+
+    assert restore_response.status_code == 200
+    restored_task = restore_response.json()
+    assert restored_task["status"] == initial_status
+    assert restored_task["completed_at"] == task["completed_at"]
+    assert restored_task["archived_at"] is None
+
+
+@pytest.mark.anyio
+async def test_patch_rejects_archived_status(client: AsyncClient) -> None:
+    """PATCH не принимает архивацию как статус выполнения."""
+    await auth_client(client)
+    task = await create_task(client)
+
+    response = await client.patch(
+        f"/api/v1/tasks/{task['id']}",
+        json={"status": "archived"},
+    )
+
+    assert response.status_code == 422
+    assert response.json()["error"]["code"] == "VALIDATION_ERROR"
+
+
+@pytest.mark.anyio
+async def test_status_transition_preserves_archived_at(client: AsyncClient) -> None:
+    """Смена состояния выполнения не восстанавливает архивную задачу."""
+    await auth_client(client)
+    task = await create_task(client)
+    archive_response = await client.patch(
+        f"/api/v1/tasks/{task['id']}",
+        json={"archived": True},
+    )
+    archived_at = archive_response.json()["archived_at"]
+
+    done_response = await client.patch(
+        f"/api/v1/tasks/{task['id']}",
+        json={"status": "done"},
+    )
+    assert done_response.status_code == 200
+    assert done_response.json()["status"] == "done"
+    assert done_response.json()["archived_at"] == archived_at
+
+    todo_response = await client.patch(
+        f"/api/v1/tasks/{task['id']}",
+        json={"status": "todo"},
+    )
+    assert todo_response.status_code == 200
+    assert todo_response.json()["status"] == "todo"
+    assert todo_response.json()["archived_at"] == archived_at
 
 
 @pytest.mark.anyio

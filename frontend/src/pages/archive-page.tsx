@@ -158,7 +158,8 @@ export function ArchivePage() {
 
   const queryParams: TaskListParams = {
     preset: "all",
-    statuses: ["archived"],
+    statuses: ["todo", "done"],
+    archived: true,
     q: debouncedSearch,
     sort,
     limit,
@@ -190,7 +191,7 @@ export function ArchivePage() {
   }
 
   function restoreTask(taskId: string) {
-    restoreTaskMutation.mutate({ taskId, payload: { status: "todo" } });
+    restoreTaskMutation.mutate({ taskId, payload: { archived: false } });
   }
 
   async function deleteTask(taskId: string) {
@@ -207,7 +208,7 @@ export function ArchivePage() {
         <header className="archive-page__header">
           <div>
             <h1>Архив</h1>
-            <p>Завершённые и скрытые задачи</p>
+            <p>Задачи, скрытые из обычных списков</p>
           </div>
         </header>
 
@@ -298,7 +299,7 @@ export function ArchivePage() {
               <div className="archive-empty">
                 <Archive size={30} aria-hidden="true" />
                 <h2>Архив пока пуст</h2>
-                <p>Здесь появятся завершённые и скрытые задачи.</p>
+                <p>Здесь появятся задачи, которые вы отправите в архив.</p>
               </div>
             )}
 

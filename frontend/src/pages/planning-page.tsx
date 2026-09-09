@@ -57,7 +57,7 @@ function getPreset(searchParams: URLSearchParams): TaskListPreset {
 }
 
 function getStatuses(searchParams: URLSearchParams): TaskStatusCode[] {
-  const supportedStatuses: TaskStatusCode[] = ["todo", "done", "archived"];
+  const supportedStatuses: TaskStatusCode[] = ["todo", "done"];
   const statuses = searchParams
     .get("statuses")
     ?.split(",")
@@ -179,7 +179,6 @@ function PlanningTaskRow({
 }) {
   const deadlineTone = getDeadlineTone(task.deadline_date);
   const isDone = task.status === "done";
-  const isArchived = task.status === "archived";
 
   return (
     <tr className={`planning-task-row planning-task-row--${deadlineTone}`}>
@@ -189,7 +188,7 @@ function PlanningTaskRow({
           className={`planning-task-check planning-task-check--${task.status}`}
           aria-label={isDone ? `Вернуть в активные: ${task.title}` : `Выполнить: ${task.title}`}
           title={isDone ? "Вернуть в активные" : "Отметить выполненной"}
-          disabled={isPending || isArchived}
+          disabled={isPending}
           onClick={() => onStatusChange(isDone ? "todo" : "done")}
         >
           {isDone ? <Check size={11} strokeWidth={3} aria-hidden="true" /> : null}
@@ -240,7 +239,14 @@ export function PlanningPage() {
   const timezone = deadlinePreset
     ? Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC"
     : undefined;
-  const hasCustomQuery = searchParams.toString().length > 0;
+  const hasActiveFilters =
+    preset !== "all" ||
+    search.trim().length > 0 ||
+    Boolean(deadlineDate) ||
+    Boolean(deadlinePreset) ||
+    selectedStatuses.length !== 2 ||
+    !selectedStatuses.includes("todo") ||
+    !selectedStatuses.includes("done");
   const [isCreateTaskOpen, setIsCreateTaskOpen] = useState(false);
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
   const statusesQuery = useTaskStatusesQuery();
@@ -312,6 +318,14 @@ export function PlanningPage() {
 
   function changeLimit(value: number) {
     updateSearchParams({ limit: String(value), offset: null });
+  }
+
+  function resetFilters() {
+    const nextSearchParams = new URLSearchParams(searchParams);
+    ["preset", "statuses", "q", "deadline_date", "deadline_preset", "offset"].forEach((key) =>
+      nextSearchParams.delete(key)
+    );
+    setSearchParams(nextSearchParams);
   }
 
   function changeTaskStatus(taskId: string, status: TaskStatusCode) {
@@ -418,20 +432,17 @@ export function PlanningPage() {
           </label>
         </div>
 
-        {hasCustomQuery ? (
+        {hasActiveFilters ? (
           <div className="planning-active-filter" role="status">
             <span>
               {deadlinePreset
                 ? `Дедлайн: ${deadlinePresetLabels[deadlinePreset]}`
                 : deadlineDate
                 ? `Дедлайн: ${searchParams.get("deadline_date") === "today" ? "сегодня" : formatShortDate(deadlineDate)}`
-                : "Применены фильтры и настройки списка"}
+                : "Применены фильтры"}
             </span>
-            <button
-              type="button"
-              onClick={() => setSearchParams(new URLSearchParams())}
-            >
-              Сбросить всё
+            <button type="button" onClick={resetFilters}>
+              Сбросить фильтры
             </button>
           </div>
         ) : null}

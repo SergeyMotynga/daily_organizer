@@ -29,6 +29,7 @@ class TaskUpdateData:
     planned_time: time | None = None
     deadline_date: date | None = None
     status: TaskStatusCode | None = None
+    archived: bool = False
 
     def has(self, field: str) -> bool:
         """Проверяет, что поле пришло в PATCH-запросе."""
@@ -41,6 +42,7 @@ class TaskListQuery:
 
     preset: TaskListPreset = TaskListPreset.all
     statuses: list[TaskStatusCode] | None = None
+    archived: bool = False
     planned_date: date | None = None
     deadline_date: date | None = None
     deadline_preset: TaskDeadlinePreset | None = None
@@ -54,6 +56,7 @@ class TaskListFilters:
     """Технические фильтры списка задач для repository layer."""
 
     statuses: list[TaskStatusCode]
+    archived: bool = False
     planned_date_from: date | None = None
     planned_date_to: date | None = None
     planned_date_is_null: bool = False

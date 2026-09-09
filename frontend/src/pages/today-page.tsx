@@ -45,6 +45,7 @@ type TaskGroupProps = {
   pendingTaskId: string | null;
   onOpenTask: (taskId: string) => void;
   onStatusChange: (taskId: string, status: TaskStatusCode) => void;
+  onArchive: (taskId: string) => void;
 };
 
 function formatPageDate(date: string): string {
@@ -105,13 +106,15 @@ function TaskRow({
   today,
   isPending,
   onOpen,
-  onStatusChange
+  onStatusChange,
+  onArchive
 }: {
   task: Task;
   today: string;
   isPending: boolean;
   onOpen: () => void;
   onStatusChange: (status: TaskStatusCode) => void;
+  onArchive: () => void;
 }) {
   const isDone = task.status === "done";
   const displayDate = task.deadline_date ?? task.planned_date;
@@ -146,7 +149,7 @@ function TaskRow({
         type="button"
         aria-label={`Архивировать: ${task.title}`}
         title="Архивировать"
-        onClick={() => onStatusChange("archived")}
+        onClick={onArchive}
         disabled={isPending}
       >
         <Archive size={15} aria-hidden="true" />
@@ -163,7 +166,8 @@ function TaskGroup({
   emptyMessage,
   pendingTaskId,
   onOpenTask,
-  onStatusChange
+  onStatusChange,
+  onArchive
 }: TaskGroupProps) {
   return (
     <section className={`today-group today-group--${tone}`}>
@@ -181,6 +185,7 @@ function TaskGroup({
               isPending={pendingTaskId === task.id}
               onOpen={() => onOpenTask(task.id)}
               onStatusChange={(status) => onStatusChange(task.id, status)}
+              onArchive={() => onArchive(task.id)}
             />
           ))}
         </ul>
@@ -284,6 +289,7 @@ function TodayContent({
   pendingTaskId,
   onOpenTask,
   onStatusChange,
+  onArchive,
   onSortChange
 }: {
   data: TodayViewResponse;
@@ -291,6 +297,7 @@ function TodayContent({
   pendingTaskId: string | null;
   onOpenTask: (taskId: string) => void;
   onStatusChange: (taskId: string, status: TaskStatusCode) => void;
+  onArchive: (taskId: string) => void;
   onSortChange: (sort: TodaySort) => void;
 }) {
   const { blocks, summary } = data;
@@ -396,6 +403,7 @@ function TodayContent({
               pendingTaskId={pendingTaskId}
               onOpenTask={onOpenTask}
               onStatusChange={onStatusChange}
+              onArchive={onArchive}
             />
             <TaskGroup
               title="Выполнено сегодня"
@@ -406,6 +414,7 @@ function TodayContent({
               pendingTaskId={pendingTaskId}
               onOpenTask={onOpenTask}
               onStatusChange={onStatusChange}
+              onArchive={onArchive}
             />
           </div>
 
@@ -448,6 +457,10 @@ export function TodayPage() {
 
   function handleQuickStatusChange(taskId: string, status: TaskStatusCode) {
     quickUpdateMutation.mutate({ taskId, payload: { status } });
+  }
+
+  function handleArchive(taskId: string) {
+    quickUpdateMutation.mutate({ taskId, payload: { archived: true } });
   }
 
   return (
@@ -498,7 +511,7 @@ export function TodayPage() {
 
         {quickUpdateMutation.isError ? (
           <div className="today-quick-error" role="alert">
-            Не удалось изменить статус задачи. Попробуйте ещё раз.
+            Не удалось изменить задачу. Попробуйте ещё раз.
           </div>
         ) : null}
 
@@ -509,6 +522,7 @@ export function TodayPage() {
             pendingTaskId={pendingTaskId}
             onOpenTask={setSelectedTaskId}
             onStatusChange={handleQuickStatusChange}
+            onArchive={handleArchive}
             onSortChange={setSort}
           />
         ) : null}

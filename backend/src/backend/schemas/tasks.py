@@ -68,6 +68,7 @@ class TaskUpdateRequest(BaseModel):
     planned_time: time | None = None
     deadline_date: date | None = None
     status: TaskStatusCode | None = None
+    archived: bool = False
 
     _trim_title = field_validator("title")(trim_text)
     _normalize_description = field_validator("description")(normalize_description)

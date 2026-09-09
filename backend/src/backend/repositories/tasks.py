@@ -97,6 +97,7 @@ class TaskRepository:
             select(Task)
             .where(
                 Task.user_id == user_id,
+                Task.archived_at.is_(None),
                 or_(
                     and_(
                         Task.status_code == TaskStatusCode.todo.value,
@@ -139,7 +140,8 @@ class TaskRepository:
     ) -> Select[tuple[Task]]:
         """Применяет технические фильтры списка задач."""
         statement = statement.where(
-            Task.status_code.in_([status.value for status in filters.statuses])
+            Task.status_code.in_([status.value for status in filters.statuses]),
+            Task.archived_at.is_not(None) if filters.archived else Task.archived_at.is_(None),
         )
 
         if filters.planned_date_is_null:

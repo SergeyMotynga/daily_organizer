@@ -77,16 +77,17 @@ async def test_create_task_with_done_status_sets_completed_at(client: AsyncClien
 
 
 @pytest.mark.anyio
-async def test_create_task_with_archived_status_sets_archived_at(client: AsyncClient) -> None:
-    """Создание архивной задачи сразу ставит archived_at."""
+async def test_create_task_rejects_archived_status(client: AsyncClient) -> None:
+    """Создание задачи не принимает архивацию как статус выполнения."""
     await auth_client(client)
 
-    task = await create_task(client, {"title": "Архивная", "status": "archived"})
+    response = await client.post(
+        "/api/v1/tasks",
+        json={"title": "Архивная", "status": "archived"},
+    )
 
-    assert task["status"] == "archived"
-    assert task["completed_at"] is None
-    assert task["archived_at"] is not None
-    assert "status_code" not in task
+    assert response.status_code == 422
+    assert response.json()["error"]["code"] == "VALIDATION_ERROR"
 
 
 @pytest.mark.anyio

@@ -11,6 +11,7 @@ import {
   Plus,
   RotateCcw
 } from "lucide-react";
+import { Link } from "react-router";
 
 import type { TaskStatusCode } from "../entities/task/types";
 import { CreateTaskDrawer } from "../features/tasks/create-task-drawer";
@@ -24,7 +25,16 @@ type SummaryCard = {
   value: number;
   icon: LucideIcon;
   tone: "primary" | "neutral" | "warning" | "danger" | "success";
+  to?: string;
 };
+
+type TodaySort = "created_at_desc" | "planned_date_asc" | "deadline_date_asc";
+
+const todaySortOptions: { value: TodaySort; label: string }[] = [
+  { value: "created_at_desc", label: "Сначала новые" },
+  { value: "planned_date_asc", label: "По плановой дате" },
+  { value: "deadline_date_asc", label: "По дедлайну" }
+];
 
 type TaskGroupProps = {
   title: string;
@@ -65,6 +75,22 @@ function formatTaskDate(date: string, today: string): string {
     month: "short",
     timeZone: "UTC"
   }).format(new Date(`${date}T00:00:00Z`));
+}
+
+function sortTasks(tasks: Task[], sort: TodaySort): Task[] {
+  return [...tasks].sort((left, right) => {
+    if (sort === "created_at_desc") {
+      return right.created_at.localeCompare(left.created_at);
+    }
+
+    const field = sort === "planned_date_asc" ? "planned_date" : "deadline_date";
+    const leftDate = left[field];
+    const rightDate = right[field];
+    if (!leftDate && !rightDate) return 0;
+    if (!leftDate) return 1;
+    if (!rightDate) return -1;
+    return leftDate.localeCompare(rightDate);
+  });
 }
 
 function TaskRow({
@@ -156,18 +182,27 @@ function TaskGroup({
   );
 }
 
-function AttentionCard({ todayDeadline, overdue }: { todayDeadline: number; overdue: number }) {
+function AttentionCard({
+  todayDeadline,
+  overdue
+}: {
+  todayDeadline: number;
+  overdue: number;
+}) {
   return (
     <section className="today-compact-card today-attention-card">
       <header>
         <h2>Требует внимания</h2>
         <AlertCircle size={18} aria-hidden="true" />
       </header>
-      <div className="today-attention-row">
+      <Link
+        className="today-attention-row today-attention-row--link"
+        to="/app/planning?deadline_date=today&statuses=todo"
+      >
         <span>Дедлайн сегодня</span>
         <strong className="today-attention-row--warning">{todayDeadline}</strong>
         <ChevronRight size={16} aria-hidden="true" />
-      </div>
+      </Link>
       <div className="today-attention-row">
         <span>Просрочено</span>
         <strong className="today-attention-row--danger">{overdue}</strong>
@@ -182,14 +217,17 @@ function CompactTaskCard({
   tasks,
   today,
   showDeadline = false,
+  moreTo,
   onOpenTask
 }: {
   title: string;
   tasks: Task[];
   today: string;
   showDeadline?: boolean;
+  moreTo: string;
   onOpenTask: (taskId: string) => void;
 }) {
+  const isTruncated = tasks.length > 3;
   const visibleTasks = tasks.slice(0, 3);
 
   return (
@@ -199,18 +237,25 @@ function CompactTaskCard({
         <span>{tasks.length}</span>
       </header>
       {visibleTasks.length > 0 ? (
-        <ul className="today-compact-list">
-          {visibleTasks.map((task) => (
-            <li key={task.id}>
-              <button type="button" onClick={() => onOpenTask(task.id)}>
-                {task.title}
-              </button>
-              {showDeadline && task.deadline_date ? (
-                <span>{formatTaskDate(task.deadline_date, today)}</span>
-              ) : null}
-            </li>
-          ))}
-        </ul>
+        <>
+          <ul className="today-compact-list">
+            {visibleTasks.map((task) => (
+              <li key={task.id}>
+                <button type="button" onClick={() => onOpenTask(task.id)}>
+                  {task.title}
+                </button>
+                {showDeadline && task.deadline_date ? (
+                  <span>{formatTaskDate(task.deadline_date, today)}</span>
+                ) : null}
+              </li>
+            ))}
+          </ul>
+          {isTruncated ? (
+            <Link className="today-compact-card__more" to={moreTo}>
+              Показать больше
+            </Link>
+          ) : null}
+        </>
       ) : (
         <p className="today-compact-card__empty">Задач пока нет.</p>
       )}
@@ -220,14 +265,18 @@ function CompactTaskCard({
 
 function TodayContent({
   data,
+  sort,
   pendingTaskId,
   onOpenTask,
-  onStatusChange
+  onStatusChange,
+  onSortChange
 }: {
   data: TodayViewResponse;
+  sort: TodaySort;
   pendingTaskId: string | null;
   onOpenTask: (taskId: string) => void;
   onStatusChange: (taskId: string, status: TaskStatusCode) => void;
+  onSortChange: (sort: TodaySort) => void;
 }) {
   const { blocks, summary } = data;
   const summaryCards: SummaryCard[] = [
@@ -235,32 +284,62 @@ function TodayContent({
       label: "Сегодня",
       value: blocks.planned_today.length,
       icon: CalendarDays,
-      tone: "primary"
+      tone: "primary",
+      to: "/app/planning?preset=today&statuses=todo"
     },
-    { label: "Входящие", value: blocks.inbox.length, icon: Inbox, tone: "neutral" },
+    {
+      label: "Входящие",
+      value: blocks.inbox.length,
+      icon: Inbox,
+      tone: "neutral",
+      to: "/app/planning?preset=no_date&statuses=todo"
+    },
     {
       label: "Дедлайн сегодня",
       value: summary.today_deadline,
       icon: Clock3,
-      tone: "warning"
+      tone: "warning",
+      to: "/app/planning?deadline_date=today&statuses=todo"
     },
     { label: "Просрочено", value: summary.overdue, icon: AlertCircle, tone: "danger" },
-    { label: "Выполнено", value: summary.done_today, icon: CheckCircle2, tone: "success" }
+    {
+      label: "Выполнено",
+      value: summary.done_today,
+      icon: CheckCircle2,
+      tone: "success",
+      to: "/app/planning?preset=all&statuses=done"
+    }
   ];
   const taskCount = Object.values(blocks).reduce((total, tasks) => total + tasks.length, 0);
+  const plannedToday = sortTasks(blocks.planned_today, sort);
+  const doneToday = sortTasks(blocks.done_today, sort);
+  const inbox = sortTasks(blocks.inbox, sort);
+  const soonDeadline = sortTasks(blocks.soon_deadline, sort);
 
   return (
     <>
       <div className="today-summary" aria-label="Сводка задач">
-        {summaryCards.map(({ label, value, icon: Icon, tone }) => (
-          <article className={`today-summary-card today-summary-card--${tone}`} key={label}>
-            <div>
-              <span>{label}</span>
-              <strong>{value}</strong>
-            </div>
-            <Icon size={22} strokeWidth={1.8} aria-hidden="true" />
-          </article>
-        ))}
+        {summaryCards.map(({ label, value, icon: Icon, tone, to }) => {
+          const content = (
+            <>
+              <div>
+                <span>{label}</span>
+                <strong>{value}</strong>
+              </div>
+              <Icon size={22} strokeWidth={1.8} aria-hidden="true" />
+            </>
+          );
+
+          return to ? (
+            <Link className={`today-summary-card today-summary-card--${tone}`} to={to} key={label}>
+              {content}
+            </Link>
+          ) : (
+            <article className={`today-summary-card today-summary-card--${tone}`} key={label}>
+              {content}
+            </article>
+          );
+        })}
       </div>
 
       {taskCount === 0 ? (
@@ -272,9 +351,25 @@ function TodayContent({
       ) : (
         <div className="today-board">
           <div className="today-board__main">
+            <div className="today-board__toolbar">
+              <span>Задачи</span>
+              <label>
+                <span>Сортировка</span>
+                <select
+                  value={sort}
+                  onChange={(event) => onSortChange(event.target.value as TodaySort)}
+                >
+                  {todaySortOptions.map((option) => (
+                    <option value={option.value} key={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            </div>
             <TaskGroup
               title="План на сегодня"
-              tasks={blocks.planned_today}
+              tasks={plannedToday}
               today={data.date}
               emptyMessage="Запланированных задач нет."
               pendingTaskId={pendingTaskId}
@@ -283,7 +378,7 @@ function TodayContent({
             />
             <TaskGroup
               title="Выполнено сегодня"
-              tasks={blocks.done_today}
+              tasks={doneToday}
               today={data.date}
               tone="success"
               emptyMessage="Выполненных задач пока нет."
@@ -300,15 +395,17 @@ function TodayContent({
             />
             <CompactTaskCard
               title="Входящие"
-              tasks={blocks.inbox}
+              tasks={inbox}
               today={data.date}
+              moreTo="/app/planning?preset=no_date&statuses=todo"
               onOpenTask={onOpenTask}
             />
             <CompactTaskCard
               title="Скоро дедлайн"
-              tasks={blocks.soon_deadline}
+              tasks={soonDeadline}
               today={data.date}
               showDeadline
+              moreTo="/app/planning?statuses=todo&sort=deadline_date_asc"
               onOpenTask={onOpenTask}
             />
           </aside>
@@ -323,6 +420,7 @@ export function TodayPage() {
   const quickUpdateMutation = useUpdateTaskMutation();
   const [isCreateTaskOpen, setIsCreateTaskOpen] = useState(false);
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
+  const [sort, setSort] = useState<TodaySort>("created_at_desc");
   const pendingTaskId = quickUpdateMutation.isPending
     ? quickUpdateMutation.variables.taskId
     : null;
@@ -386,9 +484,11 @@ export function TodayPage() {
         {todayViewQuery.data ? (
           <TodayContent
             data={todayViewQuery.data}
+            sort={sort}
             pendingTaskId={pendingTaskId}
             onOpenTask={setSelectedTaskId}
             onStatusChange={handleQuickStatusChange}
+            onSortChange={setSort}
           />
         ) : null}
       </section>

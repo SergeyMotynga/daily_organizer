@@ -30,6 +30,7 @@ export type TaskSort =
 export type TaskListParams = {
   preset: TaskListPreset;
   statuses: TaskStatusCode[];
+  deadline_date?: string;
   q: string;
   sort: TaskSort;
   limit: number;

@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import {
   AlertCircle,
   CalendarDays,
+  Check,
   ChevronLeft,
   ChevronRight,
   Clock3,
@@ -11,6 +12,7 @@ import {
   Search,
   Settings2
 } from "lucide-react";
+import { useSearchParams } from "react-router";
 
 import type {
   Task,
@@ -21,7 +23,11 @@ import type {
 } from "../entities/task/types";
 import { CreateTaskDrawer } from "../features/tasks/create-task-drawer";
 import { EditTaskDrawer } from "../features/tasks/edit-task-drawer";
-import { useTasksQuery, useTaskStatusesQuery } from "../features/tasks/queries";
+import {
+  useTasksQuery,
+  useTaskStatusesQuery,
+  useUpdateTaskMutation
+} from "../features/tasks/queries";
 
 const presets: { value: TaskListPreset; label: string }[] = [
   { value: "today", label: "Сегодня" },
@@ -37,6 +43,48 @@ const sortOptions: { value: TaskSort; label: string }[] = [
   { value: "created_at_desc", label: "Сначала новые" },
   { value: "created_at_asc", label: "Сначала старые" }
 ];
+
+function getPreset(searchParams: URLSearchParams): TaskListPreset {
+  const preset = searchParams.get("preset");
+  return presets.some((option) => option.value === preset) ? (preset as TaskListPreset) : "all";
+}
+
+function getStatuses(searchParams: URLSearchParams): TaskStatusCode[] {
+  const supportedStatuses: TaskStatusCode[] = ["todo", "done", "archived"];
+  const statuses = searchParams
+    .get("statuses")
+    ?.split(",")
+    .filter((status): status is TaskStatusCode =>
+      supportedStatuses.includes(status as TaskStatusCode)
+    );
+
+  return statuses?.length ? statuses : ["todo", "done"];
+}
+
+function getSort(searchParams: URLSearchParams): TaskSort {
+  const sort = searchParams.get("sort");
+  return sortOptions.some((option) => option.value === sort)
+    ? (sort as TaskSort)
+    : "deadline_date_asc";
+}
+
+function getLimit(searchParams: URLSearchParams): number {
+  const limit = Number(searchParams.get("limit"));
+  return [10, 20, 50].includes(limit) ? limit : 20;
+}
+
+function getOffset(searchParams: URLSearchParams): number {
+  const offset = Number(searchParams.get("offset"));
+  return Number.isInteger(offset) && offset >= 0 ? offset : 0;
+}
+
+function getDeadlineDate(searchParams: URLSearchParams): string | undefined {
+  const deadlineDate = searchParams.get("deadline_date");
+  if (deadlineDate === "today") {
+    return getLocalDate();
+  }
+  return deadlineDate && /^\d{4}-\d{2}-\d{2}$/.test(deadlineDate) ? deadlineDate : undefined;
+}
 
 function getLocalDate(offset = 0): string {
   const date = new Date();
@@ -108,22 +156,34 @@ function getDeadlineTone(date: string | null): "danger" | "warning" | "default" 
 function PlanningTaskRow({
   task,
   statusTitle,
-  onOpen
+  isPending,
+  onOpen,
+  onStatusChange
 }: {
   task: Task;
   statusTitle: string;
+  isPending: boolean;
   onOpen: () => void;
+  onStatusChange: (status: TaskStatusCode) => void;
 }) {
   const deadlineTone = getDeadlineTone(task.deadline_date);
+  const isDone = task.status === "done";
+  const isArchived = task.status === "archived";
 
   return (
     <tr className={`planning-task-row planning-task-row--${deadlineTone}`}>
       <td className="planning-task-cell planning-task-cell--title">
-        <span
+        <button
+          type="button"
           className={`planning-task-check planning-task-check--${task.status}`}
-          aria-hidden="true"
-        />
-        <button type="button" onClick={onOpen}>
+          aria-label={isDone ? `Вернуть в активные: ${task.title}` : `Выполнить: ${task.title}`}
+          title={isDone ? "Вернуть в активные" : "Отметить выполненной"}
+          disabled={isPending || isArchived}
+          onClick={() => onStatusChange(isDone ? "todo" : "done")}
+        >
+          {isDone ? <Check size={11} strokeWidth={3} aria-hidden="true" /> : null}
+        </button>
+        <button type="button" title={task.title} onClick={onOpen}>
           {task.title}
         </button>
       </td>
@@ -157,29 +217,28 @@ function PlanningTaskRow({
 }
 
 export function PlanningPage() {
-  const [preset, setPreset] = useState<TaskListPreset>("all");
-  const [selectedStatuses, setSelectedStatuses] = useState<TaskStatusCode[]>(["todo", "done"]);
-  const [search, setSearch] = useState("");
-  const [debouncedSearch, setDebouncedSearch] = useState("");
-  const [sort, setSort] = useState<TaskSort>("deadline_date_asc");
-  const [limit, setLimit] = useState(20);
-  const [offset, setOffset] = useState(0);
+  const [searchParams, setSearchParams] = useSearchParams();
+  const preset = getPreset(searchParams);
+  const selectedStatuses = getStatuses(searchParams);
+  const search = searchParams.get("q") ?? "";
+  const sort = getSort(searchParams);
+  const limit = getLimit(searchParams);
+  const offset = getOffset(searchParams);
+  const deadlineDate = getDeadlineDate(searchParams);
+  const hasCustomQuery = searchParams.toString().length > 0;
   const [isCreateTaskOpen, setIsCreateTaskOpen] = useState(false);
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
   const statusesQuery = useTaskStatusesQuery();
-
-  useEffect(() => {
-    const timeoutId = window.setTimeout(() => {
-      setDebouncedSearch(search);
-      setOffset(0);
-    }, 300);
-    return () => window.clearTimeout(timeoutId);
-  }, [search]);
+  const quickUpdateMutation = useUpdateTaskMutation();
+  const pendingTaskId = quickUpdateMutation.isPending
+    ? quickUpdateMutation.variables.taskId
+    : null;
 
   const queryParams: TaskListParams = {
     preset,
     statuses: selectedStatuses,
-    q: debouncedSearch,
+    deadline_date: deadlineDate,
+    q: search,
     sort,
     limit,
     offset
@@ -191,33 +250,50 @@ export function PlanningPage() {
 
   useEffect(() => {
     if (total > 0 && offset >= total) {
-      setOffset(Math.max(0, (Math.ceil(total / limit) - 1) * limit));
+      const nextSearchParams = new URLSearchParams(searchParams);
+      nextSearchParams.set("offset", String(Math.max(0, (Math.ceil(total / limit) - 1) * limit)));
+      setSearchParams(nextSearchParams, { replace: true });
     }
-  }, [limit, offset, total]);
+  }, [limit, offset, searchParams, setSearchParams, total]);
+
+  function updateSearchParams(
+    updates: Record<string, string | null>,
+    options: { replace?: boolean } = {}
+  ) {
+    const nextSearchParams = new URLSearchParams(searchParams);
+    Object.entries(updates).forEach(([key, value]) => {
+      if (value === null || value === "") {
+        nextSearchParams.delete(key);
+      } else {
+        nextSearchParams.set(key, value);
+      }
+    });
+    setSearchParams(nextSearchParams, { replace: options.replace });
+  }
 
   function changePreset(value: TaskListPreset) {
-    setPreset(value);
-    setOffset(0);
+    updateSearchParams({ preset: value, deadline_date: null, offset: null });
   }
 
   function toggleStatus(status: TaskStatusCode) {
-    setSelectedStatuses((current) => {
-      if (current.includes(status)) {
-        return current.length === 1 ? current : current.filter((item) => item !== status);
-      }
-      return [...current, status];
-    });
-    setOffset(0);
+    const nextStatuses = selectedStatuses.includes(status)
+      ? selectedStatuses.length === 1
+        ? selectedStatuses
+        : selectedStatuses.filter((item) => item !== status)
+      : [...selectedStatuses, status];
+    updateSearchParams({ statuses: nextStatuses.join(","), offset: null });
   }
 
   function changeSort(value: TaskSort) {
-    setSort(value);
-    setOffset(0);
+    updateSearchParams({ sort: value, offset: null });
   }
 
   function changeLimit(value: number) {
-    setLimit(value);
-    setOffset(0);
+    updateSearchParams({ limit: String(value), offset: null });
+  }
+
+  function changeTaskStatus(taskId: string, status: TaskStatusCode) {
+    quickUpdateMutation.mutate({ taskId, payload: { status } });
   }
 
   const statusTitles = new Map(
@@ -297,7 +373,12 @@ export function PlanningPage() {
               <input
                 type="search"
                 value={search}
-                onChange={(event) => setSearch(event.target.value)}
+                onChange={(event) =>
+                  updateSearchParams(
+                    { q: event.target.value || null, offset: null },
+                    { replace: true }
+                  )
+                }
                 placeholder="Поиск по задачам"
               />
             </span>
@@ -314,6 +395,28 @@ export function PlanningPage() {
             </select>
           </label>
         </div>
+
+        {hasCustomQuery ? (
+          <div className="planning-active-filter" role="status">
+            <span>
+              {deadlineDate
+                ? `Дедлайн: ${searchParams.get("deadline_date") === "today" ? "сегодня" : formatShortDate(deadlineDate)}`
+                : "Применены фильтры и настройки списка"}
+            </span>
+            <button
+              type="button"
+              onClick={() => setSearchParams(new URLSearchParams())}
+            >
+              Сбросить всё
+            </button>
+          </div>
+        ) : null}
+
+        {quickUpdateMutation.isError ? (
+          <div className="planning-mutation-error" role="alert">
+            Не удалось изменить статус задачи. Попробуйте ещё раз.
+          </div>
+        ) : null}
 
         {tasksQuery.isPending ? (
           <div className="planning-loading" aria-live="polite" aria-label="Загрузка задач">
@@ -344,10 +447,7 @@ export function PlanningPage() {
                   <thead>
                     <tr>
                       <th>
-                        <span className="planning-table__heading-task">
-                          <span className="planning-task-check" aria-hidden="true" />
-                          Задача
-                        </span>
+                        <span className="planning-table__heading-task">Задача</span>
                       </th>
                       <th>Статус</th>
                       <th>Когда делать</th>
@@ -364,7 +464,9 @@ export function PlanningPage() {
                         key={task.id}
                         task={task}
                         statusTitle={statusTitles.get(task.status) ?? task.status}
+                        isPending={pendingTaskId === task.id}
                         onOpen={() => setSelectedTaskId(task.id)}
+                        onStatusChange={(status) => changeTaskStatus(task.id, status)}
                       />
                     ))}
                   </tbody>
@@ -393,7 +495,9 @@ export function PlanningPage() {
                   type="button"
                   aria-label="Предыдущая страница"
                   disabled={currentPage === 1}
-                  onClick={() => setOffset(Math.max(0, offset - limit))}
+                  onClick={() =>
+                    updateSearchParams({ offset: String(Math.max(0, offset - limit)) })
+                  }
                 >
                   <ChevronLeft size={17} aria-hidden="true" />
                 </button>
@@ -404,7 +508,7 @@ export function PlanningPage() {
                   type="button"
                   aria-label="Следующая страница"
                   disabled={currentPage >= pageCount}
-                  onClick={() => setOffset(offset + limit)}
+                  onClick={() => updateSearchParams({ offset: String(offset + limit) })}
                 >
                   <ChevronRight size={17} aria-hidden="true" />
                 </button>

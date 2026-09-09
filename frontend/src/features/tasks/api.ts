@@ -24,6 +24,10 @@ export function getTasks(params: TaskListParams): Promise<TaskListResponse> {
     searchParams.set("statuses", params.statuses.join(","));
   }
 
+  if (params.deadline_date) {
+    searchParams.set("deadline_date", params.deadline_date);
+  }
+
   if (params.q.trim()) {
     searchParams.set("q", params.q.trim());
   }

@@ -23,7 +23,7 @@ import type {
   TaskStatusCode
 } from "../entities/task/types";
 import { CreateTaskDrawer } from "../features/tasks/create-task-drawer";
-import { EditTaskDrawer } from "../features/tasks/edit-task-drawer";
+import { TaskDetailsDrawer } from "../features/tasks/task-details-drawer";
 import {
   useTasksQuery,
   useTaskStatusesQuery,
@@ -546,7 +546,7 @@ export function PlanningPage() {
         <CreateTaskDrawer onClose={() => setIsCreateTaskOpen(false)} />
       ) : null}
       {selectedTaskId ? (
-        <EditTaskDrawer taskId={selectedTaskId} onClose={() => setSelectedTaskId(null)} />
+        <TaskDetailsDrawer taskId={selectedTaskId} onClose={() => setSelectedTaskId(null)} />
       ) : null}
     </>
   );

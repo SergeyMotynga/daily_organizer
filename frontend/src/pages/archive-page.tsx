@@ -5,13 +5,11 @@ import {
   CalendarDays,
   ChevronLeft,
   ChevronRight,
-  Plus,
   RotateCcw,
   Search
 } from "lucide-react";
 
 import type { Task, TaskListParams, TaskSort } from "../entities/task/types";
-import { CreateTaskDrawer } from "../features/tasks/create-task-drawer";
 import {
   useDeleteTaskMutation,
   useTasksQuery,
@@ -20,9 +18,7 @@ import {
 
 const sortOptions: { value: TaskSort; label: string }[] = [
   { value: "created_at_desc", label: "Сначала новые задачи" },
-  { value: "created_at_asc", label: "Сначала старые задачи" },
-  { value: "planned_date_asc", label: "По плановой дате" },
-  { value: "deadline_date_asc", label: "По дедлайну" }
+  { value: "created_at_asc", label: "Сначала старые задачи" }
 ];
 
 function formatDate(date: string | null): string {
@@ -79,7 +75,6 @@ function ArchiveTaskRow({
     <tr>
       <td>
         <span className="archive-task-title">
-          <span className="archive-task-check" aria-hidden="true" />
           <span title={task.title}>{task.title}</span>
         </span>
       </td>
@@ -143,7 +138,6 @@ export function ArchivePage() {
   const [limit, setLimit] = useState(20);
   const [offset, setOffset] = useState(0);
   const [deleteConfirmTaskId, setDeleteConfirmTaskId] = useState<string | null>(null);
-  const [isCreateTaskOpen, setIsCreateTaskOpen] = useState(false);
   const restoreTaskMutation = useUpdateTaskMutation();
   const deleteTaskMutation = useDeleteTaskMutation();
 
@@ -202,21 +196,12 @@ export function ArchivePage() {
   }
 
   return (
-    <>
-      <section className="archive-page">
+    <section className="archive-page">
         <header className="archive-page__header">
           <div>
             <h1>Архив</h1>
             <p>Завершённые и скрытые задачи</p>
           </div>
-          <button
-            className="archive-page__new-task"
-            type="button"
-            onClick={() => setIsCreateTaskOpen(true)}
-          >
-            <Plus size={18} aria-hidden="true" />
-            Новая задача
-          </button>
         </header>
 
         <div className="archive-toolbar">
@@ -276,10 +261,7 @@ export function ArchivePage() {
                   <thead>
                     <tr>
                       <th>
-                        <span className="archive-table__heading-task">
-                          <span className="archive-task-check" aria-hidden="true" />
-                          Задача
-                        </span>
+                        <span className="archive-table__heading-task">Задача</span>
                       </th>
                       <th>Когда была запланирована</th>
                       <th>Дедлайн</th>
@@ -346,11 +328,6 @@ export function ArchivePage() {
             </footer>
           </section>
         ) : null}
-      </section>
-
-      {isCreateTaskOpen ? (
-        <CreateTaskDrawer onClose={() => setIsCreateTaskOpen(false)} />
-      ) : null}
-    </>
+    </section>
   );
 }

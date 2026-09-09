@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 
 import type { Task, TaskListParams, TaskSort } from "../entities/task/types";
+import { TaskDetailsDrawer } from "../features/tasks/task-details-drawer";
 import {
   useDeleteTaskMutation,
   useTasksQuery,
@@ -60,7 +61,8 @@ function ArchiveTaskRow({
   onRestore,
   onDeleteRequest,
   onDeleteCancel,
-  onDeleteConfirm
+  onDeleteConfirm,
+  onOpen
 }: {
   task: Task;
   isRestoring: boolean;
@@ -70,12 +72,15 @@ function ArchiveTaskRow({
   onDeleteRequest: () => void;
   onDeleteCancel: () => void;
   onDeleteConfirm: () => void;
+  onOpen: () => void;
 }) {
   return (
     <tr>
       <td>
         <span className="archive-task-title">
-          <span title={task.title}>{task.title}</span>
+          <button type="button" title={task.title} onClick={onOpen}>
+            {task.title}
+          </button>
         </span>
       </td>
       <td>
@@ -139,6 +144,7 @@ export function ArchivePage() {
   const [limit, setLimit] = useState(20);
   const [offset, setOffset] = useState(0);
   const [deleteConfirmTaskId, setDeleteConfirmTaskId] = useState<string | null>(null);
+  const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
   const restoreTaskMutation = useUpdateTaskMutation();
   const deleteTaskMutation = useDeleteTaskMutation();
 
@@ -282,6 +288,7 @@ export function ArchivePage() {
                         onDeleteRequest={() => setDeleteConfirmTaskId(task.id)}
                         onDeleteCancel={() => setDeleteConfirmTaskId(null)}
                         onDeleteConfirm={() => void deleteTask(task.id)}
+                        onOpen={() => setSelectedTaskId(task.id)}
                       />
                     ))}
                   </tbody>
@@ -329,6 +336,9 @@ export function ArchivePage() {
             </footer>
           </section>
         ) : null}
+      {selectedTaskId ? (
+        <TaskDetailsDrawer taskId={selectedTaskId} onClose={() => setSelectedTaskId(null)} />
+      ) : null}
     </section>
   );
 }

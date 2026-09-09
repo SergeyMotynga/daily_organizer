@@ -15,7 +15,7 @@ import { Link } from "react-router";
 
 import type { TaskStatusCode } from "../entities/task/types";
 import { CreateTaskDrawer } from "../features/tasks/create-task-drawer";
-import { EditTaskDrawer } from "../features/tasks/edit-task-drawer";
+import { TaskDetailsDrawer } from "../features/tasks/task-details-drawer";
 import { useUpdateTaskMutation } from "../features/tasks/queries";
 import { useTodayViewQuery } from "../features/today/queries";
 import type { Task, TodayViewResponse } from "../features/today/types";
@@ -517,7 +517,7 @@ export function TodayPage() {
         <CreateTaskDrawer onClose={() => setIsCreateTaskOpen(false)} />
       ) : null}
       {selectedTaskId ? (
-        <EditTaskDrawer taskId={selectedTaskId} onClose={() => setSelectedTaskId(null)} />
+        <TaskDetailsDrawer taskId={selectedTaskId} onClose={() => setSelectedTaskId(null)} />
       ) : null}
     </>
   );

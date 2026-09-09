@@ -8,6 +8,7 @@ import {
   Clock3,
   MoreVertical,
   Plus,
+  Repeat2,
   RotateCcw,
   Search,
   Settings2
@@ -25,10 +26,12 @@ import type {
 import { CreateTaskDrawer } from "../features/tasks/create-task-drawer";
 import { TaskDetailsDrawer } from "../features/tasks/task-details-drawer";
 import {
+  useRecurrenceCompletionMutation,
   useTasksQuery,
   useTaskStatusesQuery,
   useUpdateTaskMutation
 } from "../features/tasks/queries";
+import { getRecurrenceLabel, isTaskRecurring } from "../features/tasks/recurrence";
 
 const presets: { value: TaskListPreset; label: string }[] = [
   { value: "today", label: "Сегодня" },
@@ -151,11 +154,16 @@ function getPlannedDateLabel(date: string | null): string {
   return formatShortDate(date);
 }
 
-function getDeadlineTone(date: string | null): "danger" | "warning" | "default" {
+function getDeadlineTone(
+  date: string | null,
+  deadlineTime: string | null
+): "danger" | "warning" | "default" {
   if (!date) {
     return "default";
   }
-  if (date < getLocalDate()) {
+  const today = getLocalDate();
+  const currentTime = new Date().toTimeString().slice(0, 5);
+  if (date < today || (date === today && deadlineTime !== null && deadlineTime < currentTime)) {
     return "danger";
   }
   if (date <= getLocalDate(3)) {
@@ -177,18 +185,28 @@ function PlanningTaskRow({
   onOpen: () => void;
   onStatusChange: (status: TaskStatusCode) => void;
 }) {
-  const deadlineTone = getDeadlineTone(task.deadline_date);
+  const deadlineTone = getDeadlineTone(task.deadline_date, task.deadline_time);
+  const isRecurring = isTaskRecurring(task);
+  const hasOccurrence = Boolean(task.occurrence_date);
   const isDone = task.status === "done";
+  const effectiveStatus = isDone ? "done" : "todo";
+  const planningDate = task.occurrence_date ?? task.planned_date;
 
   return (
     <tr className={`planning-task-row planning-task-row--${deadlineTone}`}>
       <td className="planning-task-cell planning-task-cell--title">
         <button
           type="button"
-          className={`planning-task-check planning-task-check--${task.status}`}
+          className={`planning-task-check planning-task-check--${effectiveStatus}`}
           aria-label={isDone ? `Вернуть в активные: ${task.title}` : `Выполнить: ${task.title}`}
-          title={isDone ? "Вернуть в активные" : "Отметить выполненной"}
-          disabled={isPending}
+          title={
+            isRecurring && !hasOccurrence
+              ? "Для выбранного периода нет occurrence"
+              : isDone
+                ? "Снять выполнение сегодня"
+                : "Отметить выполненной"
+          }
+          disabled={isPending || (isRecurring && !hasOccurrence)}
           onClick={() => onStatusChange(isDone ? "todo" : "done")}
         >
           {isDone ? <Check size={11} strokeWidth={3} aria-hidden="true" /> : null}
@@ -196,14 +214,20 @@ function PlanningTaskRow({
         <button type="button" title={task.title} onClick={onOpen}>
           {task.title}
         </button>
+        {isRecurring ? (
+          <span className="task-recurrence-badge">
+            <Repeat2 size={13} aria-hidden="true" />
+            {getRecurrenceLabel(task.recurrence_type_code, task.recurrence_interval)}
+          </span>
+        ) : null}
       </td>
       <td>
-        <span className={`planning-status planning-status--${task.status}`}>{statusTitle}</span>
+        <span className={`planning-status planning-status--${effectiveStatus}`}>{statusTitle}</span>
       </td>
       <td>
-        <span className={task.planned_date ? "planning-date" : "planning-date planning-date--muted"}>
+        <span className={planningDate ? "planning-date" : "planning-date planning-date--muted"}>
           <CalendarDays size={15} aria-hidden="true" />
-          {getPlannedDateLabel(task.planned_date)} · {task.planned_time ?? "—"}
+          {getPlannedDateLabel(planningDate)} · {task.planned_time ?? "—"}
         </span>
       </td>
       <td>
@@ -211,6 +235,7 @@ function PlanningTaskRow({
           <span className={`planning-deadline planning-deadline--${deadlineTone}`}>
             {formatShortDate(task.deadline_date)}
             <Clock3 size={15} aria-hidden="true" />
+            {task.deadline_time ? <span>{task.deadline_time}</span> : null}
           </span>
         ) : (
           <span className="planning-date planning-date--muted">—</span>
@@ -251,9 +276,12 @@ export function PlanningPage() {
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
   const statusesQuery = useTaskStatusesQuery();
   const quickUpdateMutation = useUpdateTaskMutation();
+  const recurrenceCompletionMutation = useRecurrenceCompletionMutation();
   const pendingTaskId = quickUpdateMutation.isPending
     ? quickUpdateMutation.variables.taskId
-    : null;
+    : recurrenceCompletionMutation.isPending
+      ? recurrenceCompletionMutation.variables.taskId
+      : null;
 
   const queryParams: TaskListParams = {
     preset,
@@ -328,8 +356,16 @@ export function PlanningPage() {
     setSearchParams(nextSearchParams);
   }
 
-  function changeTaskStatus(taskId: string, status: TaskStatusCode) {
-    quickUpdateMutation.mutate({ taskId, payload: { status } });
+  function changeTaskStatus(task: Task, status: TaskStatusCode) {
+    if (isTaskRecurring(task) && task.occurrence_date) {
+      recurrenceCompletionMutation.mutate({
+        taskId: task.id,
+        occurrenceDate: task.occurrence_date,
+        completed: status === "done"
+      });
+      return;
+    }
+    quickUpdateMutation.mutate({ taskId: task.id, payload: { status } });
   }
 
   const statusTitles = new Map(
@@ -447,7 +483,7 @@ export function PlanningPage() {
           </div>
         ) : null}
 
-        {quickUpdateMutation.isError ? (
+        {quickUpdateMutation.isError || recurrenceCompletionMutation.isError ? (
           <div className="planning-mutation-error" role="alert">
             Не удалось изменить статус задачи. Попробуйте ещё раз.
           </div>
@@ -498,10 +534,16 @@ export function PlanningPage() {
                       <PlanningTaskRow
                         key={task.id}
                         task={task}
-                        statusTitle={statusTitles.get(task.status) ?? task.status}
+                        statusTitle={
+                          isTaskRecurring(task)
+                            ? task.status === "done"
+                              ? "Выполнена"
+                              : "Активная"
+                            : statusTitles.get(task.status) ?? task.status
+                        }
                         isPending={pendingTaskId === task.id}
                         onOpen={() => setSelectedTaskId(task.id)}
-                        onStatusChange={(status) => changeTaskStatus(task.id, status)}
+                        onStatusChange={(status) => changeTaskStatus(task, status)}
                       />
                     ))}
                   </tbody>

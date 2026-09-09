@@ -2,13 +2,24 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import type { TaskListParams, UpdateTaskPayload } from "../../entities/task/types";
 import { todayQueryKeys } from "../today/queries";
-import { createTask, deleteTask, getTask, getTasks, getTaskStatuses, updateTask } from "./api";
+import {
+  completeTaskRecurrence,
+  createTask,
+  deleteTask,
+  getTask,
+  getTaskRecurrenceTypes,
+  getTasks,
+  getTaskStatuses,
+  uncompleteTaskRecurrence,
+  updateTask
+} from "./api";
 
 export const taskQueryKeys = {
   all: ["tasks"] as const,
   lists: ["tasks", "list"] as const,
   list: (params: TaskListParams) => ["tasks", "list", params] as const,
   statuses: ["tasks", "statuses"] as const,
+  recurrenceTypes: ["tasks", "recurrence-types"] as const,
   detail: (taskId: string) => ["tasks", "detail", taskId] as const
 };
 
@@ -24,6 +35,14 @@ export function useTaskStatusesQuery() {
   return useQuery({
     queryKey: taskQueryKeys.statuses,
     queryFn: getTaskStatuses,
+    staleTime: 5 * 60_000
+  });
+}
+
+export function useTaskRecurrenceTypesQuery() {
+  return useQuery({
+    queryKey: taskQueryKeys.recurrenceTypes,
+    queryFn: getTaskRecurrenceTypes,
     staleTime: 5 * 60_000
   });
 }
@@ -72,6 +91,31 @@ export function useDeleteTaskMutation() {
     mutationFn: deleteTask,
     onSuccess: async (_data, taskId) => {
       queryClient.removeQueries({ queryKey: taskQueryKeys.detail(taskId) });
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: taskQueryKeys.lists }),
+        queryClient.invalidateQueries({ queryKey: todayQueryKeys.all })
+      ]);
+    }
+  });
+}
+
+export function useRecurrenceCompletionMutation() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({
+      taskId,
+      occurrenceDate,
+      completed
+    }: {
+      taskId: string;
+      occurrenceDate: string;
+      completed: boolean;
+    }) =>
+      completed
+        ? completeTaskRecurrence(taskId, occurrenceDate)
+        : uncompleteTaskRecurrence(taskId, occurrenceDate),
+    onSuccess: async () => {
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: taskQueryKeys.lists }),
         queryClient.invalidateQueries({ queryKey: todayQueryKeys.all })

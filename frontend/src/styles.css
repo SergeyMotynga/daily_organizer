@@ -943,6 +943,29 @@ a.today-summary-card:focus-visible {
   cursor: pointer;
 }
 
+.today-task__content {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 8px;
+}
+
+.task-recurrence-badge {
+  display: inline-flex;
+  min-height: 21px;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 4px;
+  padding: 1px 7px;
+  border: 1px solid #d7e3f2;
+  border-radius: 999px;
+  background: #f5f8fc;
+  color: #587393;
+  font-size: 10px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
 .today-task--done .today-task__title {
   color: var(--color-text-soft);
   text-decoration: line-through;
@@ -1998,6 +2021,11 @@ a.today-summary-card:focus-visible {
   cursor: pointer;
 }
 
+.today-compact-list button .task-recurrence-icon {
+  margin-left: 5px;
+  vertical-align: -2px;
+}
+
 .today-compact-list button:hover {
   color: var(--color-brand);
 }
@@ -2164,6 +2192,10 @@ a.today-summary-card:focus-visible {
   display: flex;
   align-items: center;
   gap: 10px;
+}
+
+.planning-task-cell--title .task-recurrence-badge {
+  margin-left: auto;
 }
 
 .planning-task-cell--title > button:not(.planning-task-check) {
@@ -2826,6 +2858,11 @@ a.today-summary-card:focus-visible {
   font-size: 12px;
 }
 
+.task-create-field__note {
+  color: var(--color-text-soft);
+  font-size: 11px;
+}
+
 .task-status-options {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -2932,6 +2969,36 @@ a.today-summary-card:focus-visible {
   outline: 0;
   background: transparent;
   color: var(--color-text-muted);
+}
+
+.task-recurrence-select {
+  display: flex;
+  min-height: 44px;
+  align-items: center;
+  gap: 9px;
+  padding: 0 11px;
+  border: 1px solid var(--color-border);
+  border-radius: 10px;
+  color: var(--color-text-soft);
+}
+
+.task-recurrence-select:focus-within {
+  border-color: var(--color-brand);
+  box-shadow: 0 0 0 3px var(--focus-ring);
+}
+
+.task-recurrence-select select {
+  width: 100%;
+  min-width: 0;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: var(--color-text-muted);
+}
+
+.task-recurrence-inputs {
+  display: grid;
+  gap: 12px;
 }
 
 .task-create-hint,

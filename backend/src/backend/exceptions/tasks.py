@@ -13,6 +13,18 @@ class TaskStatusNotFoundError(TaskError):
     """Статус задачи не найден или неактивен."""
 
 
+class TaskRecurrenceTypeNotFoundError(TaskError):
+    """Тип повторения задачи не найден или неактивен."""
+
+
+class InvalidTaskScheduleError(TaskError):
+    """Даты, время или правило повторения задачи некорректны."""
+
+
+class InvalidTaskRecurrenceCompletionError(TaskError):
+    """Для указанной задачи или даты нельзя изменить факт выполнения."""
+
+
 class InvalidTaskTitleError(TaskError):
     """Название задачи не прошло валидацию."""
 

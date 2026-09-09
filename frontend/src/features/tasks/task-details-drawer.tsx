@@ -6,19 +6,23 @@ import {
   CheckCircle2,
   Clock3,
   Pencil,
+  Repeat2,
   RotateCcw,
   Trash2,
   X
 } from "lucide-react";
 
 import type { TaskStatusCode } from "../../entities/task/types";
+import { useTodayViewQuery } from "../today/queries";
 import { EditTaskDrawer } from "./edit-task-drawer";
 import {
   useDeleteTaskMutation,
+  useRecurrenceCompletionMutation,
   useTaskQuery,
   useTaskStatusesQuery,
   useUpdateTaskMutation
 } from "./queries";
+import { getRecurrenceLabel, isRecurrenceDueOn, isTaskRecurring } from "./recurrence";
 
 type TaskDetailsDrawerProps = {
   taskId: string;
@@ -62,12 +66,17 @@ function formatDateTime(date: string | null): string {
 
 export function TaskDetailsDrawer({ taskId, onClose }: TaskDetailsDrawerProps) {
   const taskQuery = useTaskQuery(taskId);
+  const todayViewQuery = useTodayViewQuery();
   const statusesQuery = useTaskStatusesQuery();
   const updateTaskMutation = useUpdateTaskMutation();
   const deleteTaskMutation = useDeleteTaskMutation();
+  const recurrenceCompletionMutation = useRecurrenceCompletionMutation();
   const [isEditing, setIsEditing] = useState(false);
   const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
-  const isMutating = updateTaskMutation.isPending || deleteTaskMutation.isPending;
+  const isMutating =
+    updateTaskMutation.isPending ||
+    deleteTaskMutation.isPending ||
+    recurrenceCompletionMutation.isPending;
 
   useEffect(() => {
     const previousOverflow = document.body.style.overflow;
@@ -92,13 +101,43 @@ export function TaskDetailsDrawer({ taskId, onClose }: TaskDetailsDrawerProps) {
   }
 
   const task = taskQuery.data;
+  const isRecurring = task ? isTaskRecurring(task) : false;
+  const occurrenceDate = todayViewQuery.data?.date;
+  const isDueToday = Boolean(
+    task && occurrenceDate && !task.archived_at && isRecurrenceDueOn(task, occurrenceDate)
+  );
+  const isCompletedToday = Boolean(
+    task &&
+      todayViewQuery.data?.blocks.done_today.some(
+        (item) => item.id === task.id && item.occurrence_date === occurrenceDate
+      )
+  );
   const statusTitle = task
-    ? statusesQuery.data?.find((status) => status.code === task.status)?.title ?? task.status
+    ? isRecurring
+      ? isCompletedToday
+        ? "Выполнена сегодня"
+        : "Повторяется"
+      : statusesQuery.data?.find((status) => status.code === task.status)?.title ?? task.status
     : "";
 
   async function changeStatus(status: TaskStatusCode) {
     try {
       await updateTaskMutation.mutateAsync({ taskId, payload: { status } });
+    } catch {
+      // Ошибка mutation отображается в drawer.
+    }
+  }
+
+  async function changeRecurrenceCompletion() {
+    if (!occurrenceDate) {
+      return;
+    }
+    try {
+      await recurrenceCompletionMutation.mutateAsync({
+        taskId,
+        occurrenceDate,
+        completed: !isCompletedToday
+      });
     } catch {
       // Ошибка mutation отображается в drawer.
     }
@@ -188,7 +227,9 @@ export function TaskDetailsDrawer({ taskId, onClose }: TaskDetailsDrawerProps) {
                 <div className="task-details__status-row">
                   <dt>Статус</dt>
                   <dd>
-                    <span className={`task-details__status task-details__status--${task.status}`}>
+                    <span
+                      className={`task-details__status task-details__status--${isCompletedToday ? "done" : task.status}`}
+                    >
                       {statusTitle}
                     </span>
                   </dd>
@@ -207,8 +248,28 @@ export function TaskDetailsDrawer({ taskId, onClose }: TaskDetailsDrawerProps) {
                     <CalendarDays size={18} aria-hidden="true" />
                     Дедлайн
                   </dt>
-                  <dd>{formatDate(task.deadline_date)}</dd>
+                  <dd>
+                    {formatDate(task.deadline_date)}
+                    {task.deadline_date && task.deadline_time
+                      ? `, ${formatTime(task.deadline_time)}`
+                      : ""}
+                  </dd>
                 </div>
+                {isRecurring ? (
+                  <div>
+                    <dt>
+                      <Repeat2 size={18} aria-hidden="true" />
+                      Повторение
+                    </dt>
+                    <dd>
+                      {getRecurrenceLabel(task.recurrence_type_code, task.recurrence_interval)} с{" "}
+                      {formatDate(task.recurrence_start_date)}
+                      {task.recurrence_end_date
+                        ? ` до ${formatDate(task.recurrence_end_date)}`
+                        : ", без даты окончания"}
+                    </dd>
+                  </div>
+                ) : null}
                 <div>
                   <dt>
                     <Clock3 size={18} aria-hidden="true" />
@@ -243,7 +304,7 @@ export function TaskDetailsDrawer({ taskId, onClose }: TaskDetailsDrawerProps) {
                 ) : null}
               </dl>
 
-              {updateTaskMutation.isError ? (
+              {updateTaskMutation.isError || recurrenceCompletionMutation.isError ? (
                 <div className="task-create-error" role="alert">
                   Не удалось изменить задачу. Попробуйте ещё раз.
                 </div>
@@ -265,15 +326,30 @@ export function TaskDetailsDrawer({ taskId, onClose }: TaskDetailsDrawerProps) {
                 <button
                   className="task-details-action"
                   type="button"
-                  onClick={() => void changeStatus(task.status === "done" ? "todo" : "done")}
-                  disabled={isMutating}
+                  onClick={() =>
+                    isRecurring
+                      ? void changeRecurrenceCompletion()
+                      : void changeStatus(task.status === "done" ? "todo" : "done")
+                  }
+                  disabled={isMutating || (isRecurring && !isDueToday)}
+                  title={
+                    isRecurring && !isDueToday ? "Сегодня задача не повторяется" : undefined
+                  }
                 >
-                  {task.status === "done" ? (
+                  {(isRecurring ? isCompletedToday : task.status === "done") ? (
                     <RotateCcw size={17} aria-hidden="true" />
                   ) : (
                     <CheckCircle2 size={17} aria-hidden="true" />
                   )}
-                  {task.status === "done" ? "Вернуть в активные" : "Выполнить"}
+                  {isRecurring
+                    ? isDueToday
+                      ? isCompletedToday
+                        ? "Снять выполнение сегодня"
+                        : "Выполнить сегодня"
+                      : "Сегодня не по расписанию"
+                    : task.status === "done"
+                      ? "Вернуть в активные"
+                      : "Выполнить"}
                 </button>
 
                 <button

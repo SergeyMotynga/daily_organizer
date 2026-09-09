@@ -1,6 +1,6 @@
 """Интеграционные тесты блоков экрана Сегодня."""
 
-from datetime import timedelta
+from datetime import UTC, datetime, timedelta
 
 import pytest
 from httpx import AsyncClient
@@ -91,3 +91,34 @@ async def test_planned_tasks_are_also_visible_in_attention_blocks(
         block_ids = [task["id"] for task in payload["blocks"][block_name]]
         assert len(block_ids) == len(set(block_ids))
     assert payload["summary"]["total_active"] == 2
+
+
+@pytest.mark.anyio
+async def test_today_view_splits_today_deadlines_by_time(
+    client: AsyncClient,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Прошедшее время сегодня попадает в overdue, а null остается today deadline."""
+    await auth_client(client)
+    fixed_now = datetime(2026, 9, 10, 12, 0, tzinfo=UTC)
+    monkeypatch.setattr("backend.services.tasks.utc_now", lambda: fixed_now)
+
+    await create_task(
+        client,
+        {"title": "Уже просрочена", "deadline_date": "2026-09-10", "deadline_time": "09:00"},
+    )
+    await create_task(
+        client,
+        {"title": "Еще не просрочена", "deadline_date": "2026-09-10", "deadline_time": "18:00"},
+    )
+    await create_task(client, {"title": "До конца дня", "deadline_date": "2026-09-10"})
+
+    response = await client.get("/api/v1/task-views/today", params={"timezone": "UTC"})
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert block_titles(payload, "overdue") == ["Уже просрочена"]
+    assert set(block_titles(payload, "today_deadline")) == {
+        "Еще не просрочена",
+        "До конца дня",
+    }

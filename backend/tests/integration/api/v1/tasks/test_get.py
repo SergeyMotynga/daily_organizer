@@ -11,7 +11,16 @@ from tests.integration.api.v1.tasks.helpers import auth_client, create_task
 async def test_get_task_returns_own_task(client: AsyncClient) -> None:
     """Получение одной задачи возвращает задачу владельца."""
     await auth_client(client)
-    created_task = await create_task(client, {"title": "Прочитать"})
+    created_task = await create_task(
+        client,
+        {
+            "title": "Прочитать",
+            "deadline_date": "2026-09-10",
+            "deadline_time": "18:30",
+            "recurrence_type_code": "weekly",
+            "recurrence_start_date": "2026-09-03",
+        },
+    )
 
     response = await client.get(f"/api/v1/tasks/{created_task['id']}")
 
@@ -19,6 +28,8 @@ async def test_get_task_returns_own_task(client: AsyncClient) -> None:
     assert response.json()["id"] == created_task["id"]
     assert response.json()["title"] == "Прочитать"
     assert response.json()["status"] == "todo"
+    assert response.json()["deadline_time"] == "18:30"
+    assert response.json()["recurrence_type_code"] == "weekly"
     assert "status_code" not in response.json()
 
 

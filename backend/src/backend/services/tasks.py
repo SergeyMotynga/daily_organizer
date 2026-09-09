@@ -8,38 +8,64 @@ from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.core.security import utc_now
-from backend.domain.tasks import TaskDeadlinePreset, TaskListPreset, TaskStatusCode
+from backend.domain.tasks import (
+    TaskDeadlinePreset,
+    TaskListPreset,
+    TaskRecurrenceTypeCode,
+    TaskStatusCode,
+)
 from backend.dto.common import PaginationParams
 from backend.dto.tasks import TaskCreateData, TaskListFilters, TaskListQuery, TaskUpdateData
 from backend.exceptions.tasks import (
+    InvalidTaskRecurrenceCompletionError,
+    InvalidTaskScheduleError,
     InvalidTimezoneError,
     TaskNotFoundError,
+    TaskRecurrenceTypeNotFoundError,
     TaskStatusNotFoundError,
 )
-from backend.models.task import Task, TaskStatus
+from backend.models.task import Task, TaskRecurrenceCompletion, TaskRecurrenceType, TaskStatus
 from backend.models.user import User
 from backend.repositories.tasks import TaskRepository
 from backend.validators.tasks import validate_task_title
 
 
 @dataclass(frozen=True)
+class TaskListItemResult:
+    """Задача списка с контекстным статусом occurrence."""
+
+    task: Task
+    status: TaskStatusCode
+    occurrence_date: date | None = None
+
+
+@dataclass(frozen=True)
 class TaskListResult:
     """Результат получения страницы задач."""
 
-    items: list[Task]
+    items: list[TaskListItemResult]
     total: int
+
+
+@dataclass(frozen=True)
+class TodayTaskResult:
+    """Задача в контексте конкретного локального дня."""
+
+    task: Task
+    status: TaskStatusCode
+    occurrence_date: date | None = None
 
 
 @dataclass(frozen=True)
 class TodayViewBlocksResult:
     """Блоки задач для экрана Сегодня."""
 
-    planned_today: list[Task]
-    inbox: list[Task]
-    soon_deadline: list[Task]
-    today_deadline: list[Task]
-    overdue: list[Task]
-    done_today: list[Task]
+    planned_today: list[TodayTaskResult]
+    inbox: list[TodayTaskResult]
+    soon_deadline: list[TodayTaskResult]
+    today_deadline: list[TodayTaskResult]
+    overdue: list[TodayTaskResult]
+    done_today: list[TodayTaskResult]
 
 
 @dataclass(frozen=True)
@@ -72,15 +98,35 @@ class TaskService:
         """Возвращает активные системные статусы задач."""
         return await self.tasks.list_active_statuses()
 
+    async def list_recurrence_types(self) -> list[TaskRecurrenceType]:
+        """Возвращает активные системные типы повторения задач."""
+        return await self.tasks.list_active_recurrence_types()
+
     async def create_task(self, *, user: User, data: TaskCreateData) -> Task:
         """Создает задачу пользователя с учетом статуса и timestamp-ов."""
+        recurrence_type = await self._get_active_recurrence_type_code(data.recurrence_type_code)
         status = await self._get_active_status_code(data.status or TaskStatusCode.todo)
+        self._validate_schedule(
+            deadline_date=data.deadline_date,
+            deadline_time=data.deadline_time,
+            recurrence_type=recurrence_type,
+            recurrence_interval=data.recurrence_interval,
+            recurrence_start_date=data.recurrence_start_date,
+            recurrence_end_date=data.recurrence_end_date,
+        )
+        if recurrence_type != TaskRecurrenceTypeCode.none and status != TaskStatusCode.todo:
+            raise InvalidTaskScheduleError()
         create_data = TaskCreateData(
             title=validate_task_title(data.title),
             description=data.description,
             planned_date=data.planned_date,
             planned_time=data.planned_time,
             deadline_date=data.deadline_date,
+            deadline_time=data.deadline_time,
+            recurrence_type_code=recurrence_type,
+            recurrence_interval=data.recurrence_interval,
+            recurrence_start_date=data.recurrence_start_date,
+            recurrence_end_date=data.recurrence_end_date,
             status=status,
         )
 
@@ -112,19 +158,50 @@ class TaskService:
     ) -> TaskListResult:
         """Возвращает страницу задач пользователя."""
         timezone = self._get_timezone(query.timezone)
-        today = utc_now().astimezone(timezone).date()
-        filters = self._build_filters(query, today)
+        local_now = utc_now().astimezone(timezone)
+        filters = self._build_filters(query, local_now)
         items, total = await self.tasks.list_tasks_for_user(
             user_id=user.id,
             filters=filters,
             pagination=pagination,
         )
-        return TaskListResult(items=items, total=total)
+        recurring_task_ids = [
+            task.id
+            for task in items
+            if filters.recurrence_date is not None
+            and task.recurrence_type_code != TaskRecurrenceTypeCode.none.value
+        ]
+        completed_recurring_task_ids = (
+            await self.tasks.list_completed_recurrence_task_ids(
+                task_ids=recurring_task_ids,
+                occurrence_date=filters.recurrence_date,
+            )
+            if filters.recurrence_date is not None
+            else set()
+        )
+        result_items = [
+            TaskListItemResult(
+                task=task,
+                status=(
+                    TaskStatusCode.done
+                    if task.id in completed_recurring_task_ids
+                    else TaskStatusCode(task.status_code)
+                ),
+                occurrence_date=(
+                    filters.recurrence_date
+                    if task.recurrence_type_code != TaskRecurrenceTypeCode.none.value
+                    else None
+                ),
+            )
+            for task in items
+        ]
+        return TaskListResult(items=result_items, total=total)
 
     async def get_today_view(self, *, user: User, timezone_name: str) -> TodayViewResult:
         """Возвращает собранный экран Сегодня для задач пользователя."""
         timezone = self._get_timezone(timezone_name)
-        today = utc_now().astimezone(timezone).date()
+        local_now = utc_now().astimezone(timezone)
+        today = local_now.date()
         deadline_to = today + timedelta(days=3)
         completed_at_from, completed_at_to = self._local_day_bounds_utc(today, timezone)
 
@@ -135,7 +212,22 @@ class TaskService:
             completed_at_from=completed_at_from,
             completed_at_to=completed_at_to,
         )
-        blocks = self._build_today_view_blocks(tasks, today, deadline_to)
+        recurring_task_ids = [
+            task.id
+            for task in tasks
+            if task.recurrence_type_code != TaskRecurrenceTypeCode.none.value
+        ]
+        completed_recurring_task_ids = await self.tasks.list_completed_recurrence_task_ids(
+            task_ids=recurring_task_ids,
+            occurrence_date=today,
+        )
+        blocks = self._build_today_view_blocks(
+            tasks,
+            today,
+            deadline_to,
+            local_now.time(),
+            completed_recurring_task_ids,
+        )
         active_tasks = (
             blocks.planned_today
             + blocks.inbox
@@ -144,7 +236,7 @@ class TaskService:
             + blocks.overdue
         )
         summary = TodayViewSummaryResult(
-            total_active=len({task.id for task in active_tasks}),
+            total_active=len({item.task.id for item in active_tasks}),
             done_today=len(blocks.done_today),
             overdue=len(blocks.overdue),
             today_deadline=len(blocks.today_deadline),
@@ -155,6 +247,41 @@ class TaskService:
     async def update_task(self, *, user: User, task_id: UUID, data: TaskUpdateData) -> Task:
         """Частично изменяет задачу пользователя."""
         task = await self.get_task(user=user, task_id=task_id)
+        was_recurring = task.recurrence_type_code != TaskRecurrenceTypeCode.none.value
+
+        recurrence_type = TaskRecurrenceTypeCode(task.recurrence_type_code)
+        if data.has("recurrence_type_code"):
+            if data.recurrence_type_code is None:
+                raise TaskRecurrenceTypeNotFoundError()
+            recurrence_type = await self._get_active_recurrence_type_code(data.recurrence_type_code)
+
+        recurrence_interval = (
+            data.recurrence_interval
+            if data.has("recurrence_interval")
+            else task.recurrence_interval
+        )
+        if recurrence_interval is None:
+            raise InvalidTaskScheduleError()
+        recurrence_start_date = (
+            data.recurrence_start_date
+            if data.has("recurrence_start_date")
+            else task.recurrence_start_date
+        )
+        recurrence_end_date = (
+            data.recurrence_end_date
+            if data.has("recurrence_end_date")
+            else task.recurrence_end_date
+        )
+        deadline_date = data.deadline_date if data.has("deadline_date") else task.deadline_date
+        deadline_time = data.deadline_time if data.has("deadline_time") else task.deadline_time
+        self._validate_schedule(
+            deadline_date=deadline_date,
+            deadline_time=deadline_time,
+            recurrence_type=recurrence_type,
+            recurrence_interval=recurrence_interval,
+            recurrence_start_date=recurrence_start_date,
+            recurrence_end_date=recurrence_end_date,
+        )
 
         if data.has("title"):
             task.title = validate_task_title(data.title)
@@ -166,16 +293,35 @@ class TaskService:
             task.planned_time = data.planned_time
         if data.has("deadline_date"):
             task.deadline_date = data.deadline_date
+        if data.has("deadline_time"):
+            task.deadline_time = data.deadline_time
+        if data.has("recurrence_type_code"):
+            task.recurrence_type_code = recurrence_type.value
+        if data.has("recurrence_interval"):
+            task.recurrence_interval = recurrence_interval
+        if data.has("recurrence_start_date"):
+            task.recurrence_start_date = data.recurrence_start_date
+        if data.has("recurrence_end_date"):
+            task.recurrence_end_date = data.recurrence_end_date
         if data.has("status"):
             if data.status is None:
                 raise TaskStatusNotFoundError()
-            status = await self._get_active_status_code(data.status)
-            task.status_code = status.value
-            self._apply_status_timestamps(task, status)
+            if recurrence_type != TaskRecurrenceTypeCode.none:
+                if data.status != TaskStatusCode.todo:
+                    raise InvalidTaskScheduleError()
+            else:
+                status = await self._get_active_status_code(data.status)
+                task.status_code = status.value
+                self._apply_status_timestamps(task, status)
+        if recurrence_type != TaskRecurrenceTypeCode.none:
+            task.status_code = TaskStatusCode.todo.value
+            task.completed_at = None
         if data.has("archived"):
             task.archived_at = utc_now() if data.archived else None
 
         try:
+            if was_recurring and recurrence_type == TaskRecurrenceTypeCode.none:
+                await self.tasks.delete_recurrence_completions_for_task(task_id=task.id)
             task = await self.tasks.save_task(task)
             await self.db.commit()
         except Exception:
@@ -195,6 +341,60 @@ class TaskService:
             await self.db.rollback()
             raise
 
+    async def complete_recurrence(
+        self,
+        *,
+        user: User,
+        task_id: UUID,
+        occurrence_date: date,
+    ) -> TaskRecurrenceCompletion:
+        """Отмечает повторяющуюся задачу выполненной в указанную дату."""
+        task = await self.get_task(user=user, task_id=task_id)
+        self._validate_recurrence_completion(task, occurrence_date)
+        existing_completion = await self.tasks.get_recurrence_completion(
+            task_id=task.id,
+            occurrence_date=occurrence_date,
+        )
+        if existing_completion is not None:
+            return existing_completion
+
+        try:
+            completion = await self.tasks.create_recurrence_completion(
+                task_id=task.id,
+                occurrence_date=occurrence_date,
+                completed_at=utc_now(),
+            )
+            await self.db.commit()
+        except Exception:
+            await self.db.rollback()
+            raise
+
+        return completion
+
+    async def uncomplete_recurrence(
+        self,
+        *,
+        user: User,
+        task_id: UUID,
+        occurrence_date: date,
+    ) -> None:
+        """Снимает выполнение повторяющейся задачи за указанную дату."""
+        task = await self.get_task(user=user, task_id=task_id)
+        self._validate_recurrence_completion(task, occurrence_date)
+        completion = await self.tasks.get_recurrence_completion(
+            task_id=task.id,
+            occurrence_date=occurrence_date,
+        )
+        if completion is None:
+            return
+
+        try:
+            await self.tasks.delete_recurrence_completion(completion)
+            await self.db.commit()
+        except Exception:
+            await self.db.rollback()
+            raise
+
     async def _get_active_status_code(self, status: TaskStatusCode) -> TaskStatusCode:
         """Проверяет, что статус есть в активном системном справочнике."""
         existing_status = await self.tasks.get_active_status_by_code(status.value)
@@ -203,25 +403,43 @@ class TaskService:
 
         return status
 
-    def _build_filters(self, query: TaskListQuery, today: date) -> TaskListFilters:
+    async def _get_active_recurrence_type_code(
+        self,
+        recurrence_type: TaskRecurrenceTypeCode,
+    ) -> TaskRecurrenceTypeCode:
+        """Проверяет тип повторения по активному системному справочнику."""
+        existing_type = await self.tasks.get_active_recurrence_type_by_code(recurrence_type.value)
+        if existing_type is None:
+            raise TaskRecurrenceTypeNotFoundError()
+
+        return recurrence_type
+
+    def _build_filters(self, query: TaskListQuery, local_now: datetime) -> TaskListFilters:
         """Преобразует продуктовый query в технические фильтры repository."""
+        today = local_now.date()
         statuses = query.statuses or [TaskStatusCode.todo, TaskStatusCode.done]
         planned_date_from = None
         planned_date_to = None
         planned_date_is_null = False
         deadline_date_from = None
         deadline_date_to = None
+        overdue_date = None
+        overdue_time = None
+        recurrence_date = None
 
         if query.preset == TaskListPreset.today:
             planned_date_from = today
             planned_date_to = today
+            recurrence_date = today
         elif query.preset == TaskListPreset.tomorrow:
             tomorrow = today + timedelta(days=1)
             planned_date_from = tomorrow
             planned_date_to = tomorrow
+            recurrence_date = tomorrow
         elif query.preset == TaskListPreset.week:
             planned_date_from = today
             planned_date_to = today + timedelta(days=6)
+            recurrence_date = today
         elif query.preset == TaskListPreset.no_date:
             planned_date_is_null = True
 
@@ -229,11 +447,13 @@ class TaskService:
             planned_date_from = query.planned_date
             planned_date_to = query.planned_date
             planned_date_is_null = False
+            recurrence_date = query.planned_date
 
         if query.deadline_preset is not None and query.deadline_date is None:
             statuses = [status for status in statuses if status == TaskStatusCode.todo]
             if query.deadline_preset == TaskDeadlinePreset.overdue:
-                deadline_date_to = today - timedelta(days=1)
+                overdue_date = today
+                overdue_time = local_now.time()
             elif query.deadline_preset == TaskDeadlinePreset.today:
                 deadline_date_from = today
                 deadline_date_to = today
@@ -244,6 +464,8 @@ class TaskService:
         if query.deadline_date is not None:
             deadline_date_from = None
             deadline_date_to = None
+            overdue_date = None
+            overdue_time = None
 
         return TaskListFilters(
             statuses=statuses,
@@ -254,6 +476,9 @@ class TaskService:
             deadline_date=query.deadline_date,
             deadline_date_from=deadline_date_from,
             deadline_date_to=deadline_date_to,
+            overdue_date=overdue_date,
+            overdue_time=overdue_time,
+            recurrence_date=recurrence_date,
             q=query.q,
             sort=query.sort,
         )
@@ -271,40 +496,59 @@ class TaskService:
         tasks: list[Task],
         today: date,
         deadline_to: date,
+        current_time: time,
+        completed_recurring_task_ids: set[UUID],
     ) -> TodayViewBlocksResult:
         """Раскладывает задачи по блокам Сегодня без лишнего дублирования."""
-        planned_today: list[Task] = []
-        inbox: list[Task] = []
-        soon_deadline: list[Task] = []
-        today_deadline: list[Task] = []
-        overdue: list[Task] = []
-        done_today: list[Task] = []
+        planned_today: list[TodayTaskResult] = []
+        inbox: list[TodayTaskResult] = []
+        soon_deadline: list[TodayTaskResult] = []
+        today_deadline: list[TodayTaskResult] = []
+        overdue: list[TodayTaskResult] = []
+        done_today: list[TodayTaskResult] = []
 
         for task in tasks:
-            if task.status_code == TaskStatusCode.done.value:
-                done_today.append(task)
+            is_recurring = task.recurrence_type_code != TaskRecurrenceTypeCode.none.value
+            if is_recurring and not self._is_recurrence_due(task, today):
                 continue
 
-            if task.status_code != TaskStatusCode.todo.value:
+            status = (
+                TaskStatusCode.done
+                if is_recurring and task.id in completed_recurring_task_ids
+                else TaskStatusCode(task.status_code)
+            )
+            item = TodayTaskResult(
+                task=task,
+                status=status,
+                occurrence_date=today if is_recurring else None,
+            )
+
+            if status == TaskStatusCode.done:
+                done_today.append(item)
                 continue
 
-            if task.planned_date == today:
-                planned_today.append(task)
+            if is_recurring or task.planned_date == today:
+                planned_today.append(item)
 
-            if task.deadline_date is not None and task.deadline_date < today:
-                overdue.append(task)
+            is_overdue_today = (
+                task.deadline_date == today
+                and task.deadline_time is not None
+                and task.deadline_time < current_time
+            )
+            if task.deadline_date is not None and (task.deadline_date < today or is_overdue_today):
+                overdue.append(item)
                 continue
             elif task.deadline_date == today:
-                today_deadline.append(task)
+                today_deadline.append(item)
                 continue
 
-            if task.planned_date == today:
+            if is_recurring or task.planned_date == today:
                 continue
 
             if task.deadline_date is not None and task.deadline_date <= deadline_to:
-                soon_deadline.append(task)
+                soon_deadline.append(item)
             elif task.planned_date is None:
-                inbox.append(task)
+                inbox.append(item)
 
         return TodayViewBlocksResult(
             planned_today=self._sort_tasks_by_created_desc(planned_today),
@@ -315,20 +559,80 @@ class TaskService:
             done_today=self._sort_tasks_by_created_desc(done_today),
         )
 
-    def _sort_tasks_by_created_desc(self, tasks: list[Task]) -> list[Task]:
+    def _sort_tasks_by_created_desc(
+        self,
+        tasks: list[TodayTaskResult],
+    ) -> list[TodayTaskResult]:
         """Сортирует задачи от новых к старым."""
-        return sorted(tasks, key=lambda task: (task.created_at, str(task.id)), reverse=True)
+        return sorted(
+            tasks,
+            key=lambda item: (item.task.created_at, str(item.task.id)),
+            reverse=True,
+        )
 
-    def _sort_tasks_by_deadline_asc(self, tasks: list[Task]) -> list[Task]:
+    def _sort_tasks_by_deadline_asc(
+        self,
+        tasks: list[TodayTaskResult],
+    ) -> list[TodayTaskResult]:
         """Сортирует задачи по срочности дедлайна."""
         return sorted(
             tasks,
-            key=lambda task: (
-                task.deadline_date or date.max,
-                -task.created_at.timestamp(),
-                str(task.id),
+            key=lambda item: (
+                item.task.deadline_date or date.max,
+                item.task.deadline_time or time.max,
+                -item.task.created_at.timestamp(),
+                str(item.task.id),
             ),
         )
+
+    def _validate_schedule(
+        self,
+        *,
+        deadline_date: date | None,
+        deadline_time: time | None,
+        recurrence_type: TaskRecurrenceTypeCode,
+        recurrence_interval: int,
+        recurrence_start_date: date | None,
+        recurrence_end_date: date | None,
+    ) -> None:
+        """Проверяет связанные поля дедлайна и простого повторения."""
+        if deadline_time is not None and deadline_date is None:
+            raise InvalidTaskScheduleError()
+        if recurrence_interval < 1:
+            raise InvalidTaskScheduleError()
+        if recurrence_type == TaskRecurrenceTypeCode.weekdays and recurrence_interval != 1:
+            raise InvalidTaskScheduleError()
+        if recurrence_type != TaskRecurrenceTypeCode.none and recurrence_start_date is None:
+            raise InvalidTaskScheduleError()
+        if (
+            recurrence_start_date is not None
+            and recurrence_end_date is not None
+            and recurrence_end_date < recurrence_start_date
+        ):
+            raise InvalidTaskScheduleError()
+
+    def _validate_recurrence_completion(self, task: Task, occurrence_date: date) -> None:
+        """Проверяет, что задача активна и повторяется в указанную дату."""
+        if task.archived_at is not None or not self._is_recurrence_due(task, occurrence_date):
+            raise InvalidTaskRecurrenceCompletionError()
+
+    def _is_recurrence_due(self, task: Task, occurrence_date: date) -> bool:
+        """Проверяет попадание даты в простое правило повторения задачи."""
+        recurrence_type = TaskRecurrenceTypeCode(task.recurrence_type_code)
+        start_date = task.recurrence_start_date
+        if recurrence_type == TaskRecurrenceTypeCode.none or start_date is None:
+            return False
+        if occurrence_date < start_date:
+            return False
+        if task.recurrence_end_date is not None and occurrence_date > task.recurrence_end_date:
+            return False
+
+        days_since_start = (occurrence_date - start_date).days
+        if recurrence_type == TaskRecurrenceTypeCode.daily:
+            return days_since_start % task.recurrence_interval == 0
+        if recurrence_type == TaskRecurrenceTypeCode.weekdays:
+            return occurrence_date.weekday() < 5
+        return days_since_start % (7 * task.recurrence_interval) == 0
 
     def _get_timezone(self, timezone_name: str) -> ZoneInfo:
         """Возвращает IANA timezone или выбрасывает доменную ошибку."""

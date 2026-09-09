@@ -2,7 +2,11 @@
 
 import pytest
 from httpx import AsyncClient
+from sqlalchemy import func, select
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 from tests.integration.api.v1.tasks.helpers import auth_client, create_task
+
+from backend.models.task import TaskRecurrenceCompletion
 
 
 @pytest.mark.anyio
@@ -19,6 +23,7 @@ async def test_patch_task_fields(client: AsyncClient) -> None:
             "planned_date": "2026-09-05",
             "planned_time": "09:15",
             "deadline_date": "2026-09-06",
+            "deadline_time": "17:45",
         },
     )
 
@@ -29,6 +34,7 @@ async def test_patch_task_fields(client: AsyncClient) -> None:
     assert updated_task["planned_date"] == "2026-09-05"
     assert updated_task["planned_time"] == "09:15"
     assert updated_task["deadline_date"] == "2026-09-06"
+    assert updated_task["deadline_time"] == "17:45"
     assert "status_code" not in updated_task
 
 
@@ -54,6 +60,110 @@ async def test_patch_planned_time_to_null(client: AsyncClient) -> None:
 
     assert response.status_code == 200
     assert response.json()["planned_time"] is None
+
+
+@pytest.mark.anyio
+async def test_patch_task_recurrence_fields(client: AsyncClient) -> None:
+    """PATCH включает и отключает простое повторение задачи."""
+    await auth_client(client)
+    task = await create_task(client, {"title": "Обычная", "status": "done"})
+
+    recurring_response = await client.patch(
+        f"/api/v1/tasks/{task['id']}",
+        json={
+            "recurrence_type_code": "weekly",
+            "recurrence_interval": 2,
+            "recurrence_start_date": "2026-09-02",
+            "recurrence_end_date": "2026-12-31",
+        },
+    )
+
+    assert recurring_response.status_code == 200
+    recurring_task = recurring_response.json()
+    assert recurring_task["recurrence_type_code"] == "weekly"
+    assert recurring_task["recurrence_interval"] == 2
+    assert recurring_task["status"] == "todo"
+    assert recurring_task["completed_at"] is None
+
+    regular_response = await client.patch(
+        f"/api/v1/tasks/{task['id']}",
+        json={
+            "recurrence_type_code": "none",
+            "recurrence_start_date": None,
+            "recurrence_end_date": None,
+        },
+    )
+
+    assert regular_response.status_code == 200
+    assert regular_response.json()["recurrence_type_code"] == "none"
+
+
+@pytest.mark.anyio
+async def test_patch_recurrence_to_none_deletes_completion_history(
+    client: AsyncClient,
+    test_sessionmaker: async_sessionmaker[AsyncSession],
+) -> None:
+    """Переход recurring -> none очищает все completion записи задачи."""
+    await auth_client(client)
+    task = await create_task(
+        client,
+        {
+            "title": "Бывшее повторение",
+            "recurrence_type_code": "daily",
+            "recurrence_start_date": "2026-09-10",
+        },
+    )
+    completion_response = await client.put(
+        f"/api/v1/tasks/{task['id']}/recurrence-completions/2026-09-10"
+    )
+    assert completion_response.status_code == 201
+
+    response = await client.patch(
+        f"/api/v1/tasks/{task['id']}",
+        json={"recurrence_type_code": "none"},
+    )
+
+    assert response.status_code == 200
+    assert response.json()["recurrence_type_code"] == "none"
+    async with test_sessionmaker() as db:
+        completion_count = await db.scalar(
+            select(func.count())
+            .select_from(TaskRecurrenceCompletion)
+            .where(TaskRecurrenceCompletion.task_id == task["id"])
+        )
+    assert completion_count == 0
+
+
+@pytest.mark.anyio
+async def test_patch_rejects_invalid_final_deadline_and_recurring_status(
+    client: AsyncClient,
+) -> None:
+    """PATCH проверяет итоговый дедлайн и не закрывает recurring rule статусом done."""
+    await auth_client(client)
+    task = await create_task(
+        client,
+        {
+            "title": "Повторение",
+            "deadline_date": "2026-09-10",
+            "deadline_time": "12:00",
+            "recurrence_type_code": "daily",
+            "recurrence_start_date": "2026-09-01",
+        },
+    )
+
+    deadline_response = await client.patch(
+        f"/api/v1/tasks/{task['id']}",
+        json={"deadline_date": None},
+    )
+    status_response = await client.patch(
+        f"/api/v1/tasks/{task['id']}",
+        json={"status": "done"},
+    )
+
+    assert deadline_response.status_code == 400
+    assert deadline_response.json()["error"]["code"] == "INVALID_TASK_SCHEDULE"
+    assert status_response.status_code == 400
+    assert status_response.json()["error"]["code"] == "INVALID_TASK_SCHEDULE"
 
 
 @pytest.mark.anyio

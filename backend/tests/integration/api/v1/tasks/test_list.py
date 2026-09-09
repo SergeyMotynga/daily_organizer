@@ -20,6 +20,120 @@ def titles(payload: dict[str, object]) -> list[str]:
 
 
 @pytest.mark.anyio
+async def test_list_tasks_returns_deadline_time_and_recurrence(client: AsyncClient) -> None:
+    """Список возвращает новые поля дедлайна и повторения."""
+    await auth_client(client)
+    await create_task(
+        client,
+        {
+            "title": "Повторение",
+            "deadline_date": "2026-09-10",
+            "deadline_time": "08:15",
+            "recurrence_type_code": "daily",
+            "recurrence_interval": 2,
+            "recurrence_start_date": "2026-09-01",
+        },
+    )
+
+    response = await client.get(
+        "/api/v1/tasks",
+        params={"planned_date": "2026-09-09", "timezone": "UTC"},
+    )
+
+    assert response.status_code == 200
+    task = response.json()["items"][0]
+    assert task["deadline_time"] == "08:15"
+    assert task["recurrence_type_code"] == "daily"
+    assert task["recurrence_interval"] == 2
+    assert task["occurrence_date"] == "2026-09-09"
+
+
+@pytest.mark.anyio
+async def test_list_tasks_returns_recurring_only_for_selected_occurrence_context(
+    client: AsyncClient,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Planning list показывает recurring rule только для даты, когда она due."""
+    await auth_client(client)
+    fixed_now = datetime(2026, 9, 10, 12, 0, tzinfo=UTC)
+    monkeypatch.setattr("backend.services.tasks.utc_now", lambda: fixed_now)
+    await create_task(
+        client,
+        {"title": "Обычная сегодня", "planned_date": "2026-09-10"},
+    )
+    await create_task(client, {"title": "Обычная без даты"})
+    daily = await create_task(
+        client,
+        {
+            "title": "Раз в два дня",
+            "recurrence_type_code": "daily",
+            "recurrence_interval": 2,
+            "recurrence_start_date": "2026-09-10",
+        },
+    )
+    await create_task(
+        client,
+        {
+            "title": "По будням",
+            "recurrence_type_code": "weekdays",
+            "recurrence_start_date": "2026-09-10",
+        },
+    )
+    await create_task(
+        client,
+        {
+            "title": "Раз в неделю",
+            "recurrence_type_code": "weekly",
+            "recurrence_start_date": "2026-09-10",
+        },
+    )
+    await create_task(
+        client,
+        {
+            "title": "Не сегодня",
+            "recurrence_type_code": "weekly",
+            "recurrence_start_date": "2026-09-09",
+        },
+    )
+
+    all_response = await client.get("/api/v1/tasks?preset=all&timezone=UTC")
+    no_date_response = await client.get("/api/v1/tasks?preset=no_date&timezone=UTC")
+    today_response = await client.get("/api/v1/tasks?preset=today&timezone=UTC")
+    tomorrow_response = await client.get("/api/v1/tasks?preset=tomorrow&timezone=UTC")
+    exact_response = await client.get(
+        "/api/v1/tasks",
+        params={"planned_date": "2026-09-12", "timezone": "UTC"},
+    )
+    week_response = await client.get("/api/v1/tasks?preset=week&timezone=UTC")
+
+    assert set(titles(all_response.json())) == {"Обычная сегодня", "Обычная без даты"}
+    assert titles(no_date_response.json()) == ["Обычная без даты"]
+    assert set(titles(today_response.json())) == {
+        "Обычная сегодня",
+        "Раз в два дня",
+        "По будням",
+        "Раз в неделю",
+    }
+    assert titles(tomorrow_response.json()) == ["По будням"]
+    assert titles(exact_response.json()) == ["Раз в два дня"]
+    assert set(titles(week_response.json())) == {
+        "Обычная сегодня",
+        "Раз в два дня",
+        "По будням",
+        "Раз в неделю",
+    }
+
+    completion_response = await client.put(
+        f"/api/v1/tasks/{daily['id']}/recurrence-completions/2026-09-10"
+    )
+    assert completion_response.status_code == 201
+    done_response = await client.get("/api/v1/tasks?preset=today&statuses=done&timezone=UTC")
+    assert titles(done_response.json()) == ["Раз в два дня"]
+    assert done_response.json()["items"][0]["status"] == "done"
+    assert done_response.json()["items"][0]["occurrence_date"] == "2026-09-10"
+
+
+@pytest.mark.anyio
 async def test_list_tasks_default_excludes_archived(client: AsyncClient) -> None:
     """Обычный список исключает задачи с archived_at."""
     await auth_client(client)
@@ -211,6 +325,40 @@ async def test_list_tasks_sorts_planned_time_within_date_nulls_last(
     assert titles(response.json()) == [
         "Раннее время",
         "Позднее время",
+        "Без времени",
+        "Следующий день",
+    ]
+
+
+@pytest.mark.anyio
+async def test_list_tasks_sorts_deadline_time_within_date_nulls_last(
+    client: AsyncClient,
+) -> None:
+    """Ближайшие дедлайны учитывают время и ставят дедлайн без времени в конец дня."""
+    await auth_client(client)
+    await create_task(
+        client,
+        {"title": "Без времени", "deadline_date": "2026-09-10"},
+    )
+    await create_task(
+        client,
+        {"title": "Позднее", "deadline_date": "2026-09-10", "deadline_time": "18:00"},
+    )
+    await create_task(
+        client,
+        {"title": "Раньше", "deadline_date": "2026-09-10", "deadline_time": "09:00"},
+    )
+    await create_task(
+        client,
+        {"title": "Следующий день", "deadline_date": "2026-09-11", "deadline_time": "08:00"},
+    )
+
+    response = await client.get("/api/v1/tasks?sort=deadline_date_asc")
+
+    assert response.status_code == 200
+    assert titles(response.json()) == [
+        "Раньше",
+        "Позднее",
         "Без времени",
         "Следующий день",
     ]

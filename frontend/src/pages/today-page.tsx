@@ -9,6 +9,7 @@ import {
   Clock3,
   Inbox,
   Plus,
+  Repeat2,
   RotateCcw
 } from "lucide-react";
 import { Link } from "react-router";
@@ -16,7 +17,11 @@ import { Link } from "react-router";
 import type { TaskStatusCode } from "../entities/task/types";
 import { CreateTaskDrawer } from "../features/tasks/create-task-drawer";
 import { TaskDetailsDrawer } from "../features/tasks/task-details-drawer";
-import { useUpdateTaskMutation } from "../features/tasks/queries";
+import {
+  useRecurrenceCompletionMutation,
+  useUpdateTaskMutation
+} from "../features/tasks/queries";
+import { getRecurrenceLabel, isTaskRecurring } from "../features/tasks/recurrence";
 import { useTodayViewQuery } from "../features/today/queries";
 import type { Task, TodayViewResponse } from "../features/today/types";
 
@@ -44,7 +49,7 @@ type TaskGroupProps = {
   emptyMessage: string;
   pendingTaskId: string | null;
   onOpenTask: (taskId: string) => void;
-  onStatusChange: (taskId: string, status: TaskStatusCode) => void;
+  onStatusChange: (task: Task, status: TaskStatusCode) => void;
   onArchive: (taskId: string) => void;
 };
 
@@ -91,13 +96,16 @@ function sortTasks(tasks: Task[], sort: TodaySort): Task[] {
     if (!leftDate) return 1;
     if (!rightDate) return -1;
     const dateComparison = leftDate.localeCompare(rightDate);
-    if (dateComparison !== 0 || sort !== "planned_date_asc") {
+    if (dateComparison !== 0) {
       return dateComparison;
     }
-    if (!left.planned_time && !right.planned_time) return 0;
-    if (!left.planned_time) return 1;
-    if (!right.planned_time) return -1;
-    return left.planned_time.localeCompare(right.planned_time);
+    const timeField = sort === "planned_date_asc" ? "planned_time" : "deadline_time";
+    const leftTime = left[timeField];
+    const rightTime = right[timeField];
+    if (!leftTime && !rightTime) return 0;
+    if (!leftTime) return 1;
+    if (!rightTime) return -1;
+    return leftTime.localeCompare(rightTime);
   });
 }
 
@@ -118,6 +126,7 @@ function TaskRow({
 }) {
   const isDone = task.status === "done";
   const displayDate = task.deadline_date ?? task.planned_date;
+  const displayTime = task.deadline_date ? task.deadline_time : task.planned_time;
 
   return (
     <li className={isDone ? "today-task today-task--done" : "today-task"}>
@@ -131,17 +140,26 @@ function TaskRow({
       >
         {isDone ? <CheckCircle2 size={17} /> : null}
       </button>
-      <button className="today-task__title" type="button" onClick={onOpen} disabled={isPending}>
-        {task.title}
-      </button>
+      <span className="today-task__content">
+        <button className="today-task__title" type="button" onClick={onOpen} disabled={isPending}>
+          {task.title}
+        </button>
+        {isTaskRecurring(task) ? (
+          <span className="task-recurrence-badge">
+            <Repeat2 size={13} aria-hidden="true" />
+            {getRecurrenceLabel(task.recurrence_type_code, task.recurrence_interval)}
+          </span>
+        ) : null}
+      </span>
       {displayDate ? (
         <span className="today-task__date">
           <CalendarDays size={15} />
-          {formatTaskDate(displayDate, today)} · {task.planned_time ?? "—"}
+          {formatTaskDate(displayDate, today)}
+          {displayTime ? ` · ${displayTime}` : ""}
         </span>
       ) : (
         <span className="today-task__date today-task__date--muted">
-          Без даты · {task.planned_time ?? "—"}
+          Без даты{task.planned_time ? ` · ${task.planned_time}` : ""}
         </span>
       )}
       <button
@@ -184,7 +202,7 @@ function TaskGroup({
               today={today}
               isPending={pendingTaskId === task.id}
               onOpen={() => onOpenTask(task.id)}
-              onStatusChange={(status) => onStatusChange(task.id, status)}
+              onStatusChange={(status) => onStatusChange(task, status)}
               onArchive={() => onArchive(task.id)}
             />
           ))}
@@ -260,12 +278,15 @@ function CompactTaskCard({
               <li key={task.id}>
                 <button type="button" onClick={() => onOpenTask(task.id)}>
                   {task.title}
+                  {isTaskRecurring(task) ? (
+                    <Repeat2 className="task-recurrence-icon" size={13} aria-label="Повторяется" />
+                  ) : null}
                 </button>
                 <span>
                   {showDeadline && task.deadline_date
                     ? `${formatTaskDate(task.deadline_date, today)} · `
                     : ""}
-                  {task.planned_time ?? "—"}
+                  {(showDeadline ? task.deadline_time : task.planned_time) ?? "—"}
                 </span>
               </li>
             ))}
@@ -296,7 +317,7 @@ function TodayContent({
   sort: TodaySort;
   pendingTaskId: string | null;
   onOpenTask: (taskId: string) => void;
-  onStatusChange: (taskId: string, status: TaskStatusCode) => void;
+  onStatusChange: (task: Task, status: TaskStatusCode) => void;
   onArchive: (taskId: string) => void;
   onSortChange: (sort: TodaySort) => void;
 }) {
@@ -448,15 +469,26 @@ function TodayContent({
 export function TodayPage() {
   const todayViewQuery = useTodayViewQuery();
   const quickUpdateMutation = useUpdateTaskMutation();
+  const recurrenceCompletionMutation = useRecurrenceCompletionMutation();
   const [isCreateTaskOpen, setIsCreateTaskOpen] = useState(false);
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
   const [sort, setSort] = useState<TodaySort>("created_at_desc");
   const pendingTaskId = quickUpdateMutation.isPending
     ? quickUpdateMutation.variables.taskId
-    : null;
+    : recurrenceCompletionMutation.isPending
+      ? recurrenceCompletionMutation.variables.taskId
+      : null;
 
-  function handleQuickStatusChange(taskId: string, status: TaskStatusCode) {
-    quickUpdateMutation.mutate({ taskId, payload: { status } });
+  function handleQuickStatusChange(task: Task, status: TaskStatusCode) {
+    if (isTaskRecurring(task) && task.occurrence_date) {
+      recurrenceCompletionMutation.mutate({
+        taskId: task.id,
+        occurrenceDate: task.occurrence_date,
+        completed: status === "done"
+      });
+      return;
+    }
+    quickUpdateMutation.mutate({ taskId: task.id, payload: { status } });
   }
 
   function handleArchive(taskId: string) {
@@ -509,7 +541,7 @@ export function TodayPage() {
           </section>
         ) : null}
 
-        {quickUpdateMutation.isError ? (
+        {quickUpdateMutation.isError || recurrenceCompletionMutation.isError ? (
           <div className="today-quick-error" role="alert">
             Не удалось изменить задачу. Попробуйте ещё раз.
           </div>

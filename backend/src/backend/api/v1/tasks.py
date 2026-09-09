@@ -11,12 +11,13 @@ from backend.api.query_params import normalize_optional_query_text, parse_csv_en
 from backend.domain.tasks import TaskDeadlinePreset, TaskListPreset, TaskSort, TaskStatusCode
 from backend.dto.common import PaginationParams
 from backend.dto.tasks import TaskCreateData, TaskListQuery, TaskUpdateData
-from backend.models.task import Task
+from backend.models.task import Task, TaskRecurrenceCompletion
 from backend.models.user import User
 from backend.schemas.common import PaginationMeta
 from backend.schemas.tasks import (
     TaskCreateRequest,
     TaskListResponse,
+    TaskRecurrenceCompletionResponse,
     TaskResponse,
     TaskUpdateRequest,
 )
@@ -40,6 +41,11 @@ async def create_task(
             planned_date=payload.planned_date,
             planned_time=payload.planned_time,
             deadline_date=payload.deadline_date,
+            deadline_time=payload.deadline_time,
+            recurrence_type_code=payload.recurrence_type_code,
+            recurrence_interval=payload.recurrence_interval,
+            recurrence_start_date=payload.recurrence_start_date,
+            recurrence_end_date=payload.recurrence_end_date,
             status=payload.status,
         ),
     )
@@ -78,7 +84,12 @@ async def list_tasks(
         pagination=PaginationParams(limit=limit, offset=offset),
     )
     return TaskListResponse(
-        items=[TaskResponse.model_validate(task) for task in result.items],
+        items=[
+            TaskResponse.model_validate(item.task).model_copy(
+                update={"status": item.status, "occurrence_date": item.occurrence_date}
+            )
+            for item in result.items
+        ],
         pagination=PaginationMeta(limit=limit, offset=offset, total=result.total),
     )
 
@@ -111,9 +122,51 @@ async def update_task(
             planned_date=payload.planned_date,
             planned_time=payload.planned_time,
             deadline_date=payload.deadline_date,
+            deadline_time=payload.deadline_time,
+            recurrence_type_code=payload.recurrence_type_code,
+            recurrence_interval=payload.recurrence_interval,
+            recurrence_start_date=payload.recurrence_start_date,
+            recurrence_end_date=payload.recurrence_end_date,
             status=payload.status,
             archived=payload.archived,
         ),
+    )
+
+
+@router.put(
+    "/{task_id}/recurrence-completions/{occurrence_date}",
+    response_model=TaskRecurrenceCompletionResponse,
+    status_code=status.HTTP_201_CREATED,
+)
+async def complete_task_recurrence(
+    task_id: UUID,
+    occurrence_date: date,
+    current_user: Annotated[User, Depends(get_current_user)],
+    task_service: Annotated[TaskService, Depends(get_task_service)],
+) -> TaskRecurrenceCompletion:
+    """Отмечает повторяющуюся задачу выполненной за дату."""
+    return await task_service.complete_recurrence(
+        user=current_user,
+        task_id=task_id,
+        occurrence_date=occurrence_date,
+    )
+
+
+@router.delete(
+    "/{task_id}/recurrence-completions/{occurrence_date}",
+    status_code=status.HTTP_204_NO_CONTENT,
+)
+async def uncomplete_task_recurrence(
+    task_id: UUID,
+    occurrence_date: date,
+    current_user: Annotated[User, Depends(get_current_user)],
+    task_service: Annotated[TaskService, Depends(get_task_service)],
+) -> None:
+    """Снимает выполнение повторяющейся задачи за дату."""
+    await task_service.uncomplete_recurrence(
+        user=current_user,
+        task_id=task_id,
+        occurrence_date=occurrence_date,
     )
 
 

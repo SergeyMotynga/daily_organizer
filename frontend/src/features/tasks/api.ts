@@ -3,6 +3,8 @@ import type {
   Task,
   TaskListParams,
   TaskListResponse,
+  TaskRecurrenceCompletion,
+  TaskRecurrenceType,
   TaskStatus,
   UpdateTaskPayload
 } from "../../entities/task/types";
@@ -10,6 +12,10 @@ import { apiRequest } from "../../shared/api";
 
 export function getTaskStatuses(): Promise<TaskStatus[]> {
   return apiRequest<TaskStatus[]>("/task-statuses");
+}
+
+export function getTaskRecurrenceTypes(): Promise<TaskRecurrenceType[]> {
+  return apiRequest<TaskRecurrenceType[]>("/task-recurrence-types");
 }
 
 export function getTasks(params: TaskListParams): Promise<TaskListResponse> {
@@ -67,6 +73,25 @@ export function updateTask(taskId: string, payload: UpdateTaskPayload): Promise<
 
 export function deleteTask(taskId: string): Promise<void> {
   return apiRequest<void>(`/tasks/${taskId}`, {
+    method: "DELETE"
+  });
+}
+
+export function completeTaskRecurrence(
+  taskId: string,
+  occurrenceDate: string
+): Promise<TaskRecurrenceCompletion> {
+  return apiRequest<TaskRecurrenceCompletion>(
+    `/tasks/${taskId}/recurrence-completions/${occurrenceDate}`,
+    { method: "PUT" }
+  );
+}
+
+export function uncompleteTaskRecurrence(
+  taskId: string,
+  occurrenceDate: string
+): Promise<void> {
+  return apiRequest<void>(`/tasks/${taskId}/recurrence-completions/${occurrenceDate}`, {
     method: "DELETE"
   });
 }

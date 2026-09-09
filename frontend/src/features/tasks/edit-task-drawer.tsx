@@ -1,13 +1,24 @@
 import { useEffect, useState, type FormEvent } from "react";
-import { AlertCircle, AlertTriangle, CalendarDays, Clock3, Info, Trash2, X } from "lucide-react";
+import {
+  AlertCircle,
+  AlertTriangle,
+  CalendarDays,
+  Clock3,
+  Info,
+  Repeat2,
+  Trash2,
+  X
+} from "lucide-react";
 
-import type { TaskStatusCode } from "../../entities/task/types";
+import type { TaskRecurrenceTypeCode, TaskStatusCode } from "../../entities/task/types";
 import {
   useDeleteTaskMutation,
   useTaskQuery,
+  useTaskRecurrenceTypesQuery,
   useTaskStatusesQuery,
   useUpdateTaskMutation
 } from "./queries";
+import { getRecurrenceLabel, taskRecurrenceTypeFallback } from "./recurrence";
 
 type EditTaskDrawerProps = {
   taskId: string;
@@ -17,6 +28,7 @@ type EditTaskDrawerProps = {
 export function EditTaskDrawer({ taskId, onClose }: EditTaskDrawerProps) {
   const taskQuery = useTaskQuery(taskId);
   const statusesQuery = useTaskStatusesQuery();
+  const recurrenceTypesQuery = useTaskRecurrenceTypesQuery();
   const updateTaskMutation = useUpdateTaskMutation();
   const deleteTaskMutation = useDeleteTaskMutation();
   const [title, setTitle] = useState("");
@@ -25,10 +37,17 @@ export function EditTaskDrawer({ taskId, onClose }: EditTaskDrawerProps) {
   const [plannedDate, setPlannedDate] = useState("");
   const [plannedTime, setPlannedTime] = useState("");
   const [deadlineDate, setDeadlineDate] = useState("");
+  const [deadlineTime, setDeadlineTime] = useState("");
+  const [recurrenceType, setRecurrenceType] = useState<TaskRecurrenceTypeCode>("none");
+  const [recurrenceInterval, setRecurrenceInterval] = useState(1);
+  const [recurrenceStartDate, setRecurrenceStartDate] = useState("");
+  const [recurrenceEndDate, setRecurrenceEndDate] = useState("");
   const [titleError, setTitleError] = useState<string | null>(null);
+  const [scheduleError, setScheduleError] = useState<string | null>(null);
   const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
   const isMutating = updateTaskMutation.isPending || deleteTaskMutation.isPending;
   const hasDateWarning = Boolean(plannedDate && deadlineDate && plannedDate > deadlineDate);
+  const recurrenceTypes = recurrenceTypesQuery.data ?? taskRecurrenceTypeFallback;
 
   useEffect(() => {
     if (!taskQuery.data) {
@@ -41,6 +60,11 @@ export function EditTaskDrawer({ taskId, onClose }: EditTaskDrawerProps) {
     setPlannedDate(taskQuery.data.planned_date ?? "");
     setPlannedTime(taskQuery.data.planned_time ?? "");
     setDeadlineDate(taskQuery.data.deadline_date ?? "");
+    setDeadlineTime(taskQuery.data.deadline_time ?? "");
+    setRecurrenceType(taskQuery.data.recurrence_type_code);
+    setRecurrenceInterval(taskQuery.data.recurrence_interval);
+    setRecurrenceStartDate(taskQuery.data.recurrence_start_date ?? "");
+    setRecurrenceEndDate(taskQuery.data.recurrence_end_date ?? "");
   }, [taskQuery.data]);
 
   useEffect(() => {
@@ -70,7 +94,21 @@ export function EditTaskDrawer({ taskId, onClose }: EditTaskDrawerProps) {
       return;
     }
 
+    if (deadlineTime && !deadlineDate) {
+      setScheduleError("Укажите дату дедлайна или очистите время.");
+      return;
+    }
+    if (recurrenceType !== "none" && !recurrenceStartDate) {
+      setScheduleError("Для повторения нужна дата начала.");
+      return;
+    }
+    if (recurrenceStartDate && recurrenceEndDate && recurrenceEndDate < recurrenceStartDate) {
+      setScheduleError("Дата окончания повторения не может быть раньше начала.");
+      return;
+    }
+
     setTitleError(null);
+    setScheduleError(null);
 
     try {
       await updateTaskMutation.mutateAsync({
@@ -81,7 +119,12 @@ export function EditTaskDrawer({ taskId, onClose }: EditTaskDrawerProps) {
           status,
           planned_date: plannedDate || null,
           planned_time: plannedTime || null,
-          deadline_date: deadlineDate || null
+          deadline_date: deadlineDate || null,
+          deadline_time: deadlineTime || null,
+          recurrence_type_code: recurrenceType,
+          recurrence_interval: recurrenceType === "weekdays" ? 1 : recurrenceInterval,
+          recurrence_start_date: recurrenceType === "none" ? null : recurrenceStartDate || null,
+          recurrence_end_date: recurrenceType === "none" ? null : recurrenceEndDate || null
         }
       });
       onClose();
@@ -183,8 +226,9 @@ export function EditTaskDrawer({ taskId, onClose }: EditTaskDrawerProps) {
                 />
               </label>
 
-              <fieldset className="task-create-fieldset">
-                <legend>Статус</legend>
+              {recurrenceType === "none" ? (
+                <fieldset className="task-create-fieldset">
+                  <legend>Статус</legend>
                 {statusesQuery.isPending ? (
                   <p className="task-create-fieldset__state">Загружаем статусы…</p>
                 ) : null}
@@ -221,7 +265,8 @@ export function EditTaskDrawer({ taskId, onClose }: EditTaskDrawerProps) {
                       ))}
                   </div>
                 ) : null}
-              </fieldset>
+                </fieldset>
+              ) : null}
 
               <div className="task-create-field">
                 <span>Когда делать (план)</span>
@@ -247,18 +292,114 @@ export function EditTaskDrawer({ taskId, onClose }: EditTaskDrawerProps) {
                 </div>
               </div>
 
-              <label className="task-create-field">
+              <div className="task-create-field">
                 <span>Дедлайн</span>
-                <span className="task-date-input">
-                  <CalendarDays size={17} aria-hidden="true" />
-                  <input
-                    type="date"
-                    value={deadlineDate}
-                    onChange={(event) => setDeadlineDate(event.target.value)}
-                    aria-label="Дедлайн"
-                  />
-                </span>
-              </label>
+                <div className="task-plan-inputs">
+                  <label className="task-date-input">
+                    <CalendarDays size={17} aria-hidden="true" />
+                    <input
+                      type="date"
+                      value={deadlineDate}
+                      onChange={(event) => {
+                        setDeadlineDate(event.target.value);
+                        setScheduleError(null);
+                      }}
+                      aria-label="Дата дедлайна"
+                    />
+                  </label>
+                  <label className="task-date-input">
+                    <Clock3 size={17} aria-hidden="true" />
+                    <input
+                      type="time"
+                      value={deadlineTime}
+                      onChange={(event) => {
+                        setDeadlineTime(event.target.value);
+                        setScheduleError(null);
+                      }}
+                      aria-label="Время дедлайна"
+                    />
+                  </label>
+                </div>
+              </div>
+
+              <fieldset className="task-create-fieldset">
+                <legend>Повторение</legend>
+                <label className="task-recurrence-select">
+                  <Repeat2 size={17} aria-hidden="true" />
+                  <select
+                    value={recurrenceType}
+                    onChange={(event) => {
+                      const nextType = event.target.value as TaskRecurrenceTypeCode;
+                      setRecurrenceType(nextType);
+                      setStatus("todo");
+                      setRecurrenceInterval(1);
+                      setScheduleError(null);
+                    }}
+                  >
+                    {[...recurrenceTypes]
+                      .sort((left, right) => left.sort_order - right.sort_order)
+                      .map((option) => (
+                        <option value={option.code} key={option.code}>
+                          {getRecurrenceLabel(option.code, 1)}
+                        </option>
+                      ))}
+                  </select>
+                </label>
+                {recurrenceTypesQuery.isError ? (
+                  <small className="task-create-field__note">
+                    Используется встроенный список типов повторения.
+                  </small>
+                ) : null}
+                {recurrenceType !== "none" ? (
+                  <div className="task-recurrence-inputs">
+                    {recurrenceType === "daily" || recurrenceType === "weekly" ? (
+                      <label className="task-create-field">
+                        <span>
+                          {recurrenceType === "daily"
+                            ? "Интервал в днях"
+                            : "Интервал в неделях"}
+                        </span>
+                        <input
+                          type="number"
+                          min={1}
+                          value={recurrenceInterval}
+                          onChange={(event) =>
+                            setRecurrenceInterval(Math.max(1, Number(event.target.value) || 1))
+                          }
+                        />
+                      </label>
+                    ) : null}
+                    <div className="task-plan-inputs">
+                      <label className="task-create-field">
+                        <span>Начало</span>
+                        <input
+                          type="date"
+                          value={recurrenceStartDate}
+                          onChange={(event) => {
+                            setRecurrenceStartDate(event.target.value);
+                            setScheduleError(null);
+                          }}
+                        />
+                      </label>
+                      <label className="task-create-field">
+                        <span>Окончание</span>
+                        <input
+                          type="date"
+                          min={recurrenceStartDate || undefined}
+                          value={recurrenceEndDate}
+                          onChange={(event) => setRecurrenceEndDate(event.target.value)}
+                        />
+                      </label>
+                    </div>
+                  </div>
+                ) : null}
+              </fieldset>
+
+              {scheduleError ? (
+                <div className="task-create-error" role="alert">
+                  {scheduleError}
+                </div>
+              ) : null}
 
               {hasDateWarning ? (
                 <div className="task-create-warning" role="status">
@@ -333,7 +474,10 @@ export function EditTaskDrawer({ taskId, onClose }: EditTaskDrawerProps) {
                 className="task-create-button task-create-button--primary"
                 type="submit"
                 disabled={
-                  isMutating || statusesQuery.isPending || statusesQuery.isError
+                  isMutating ||
+                  statusesQuery.isPending ||
+                  statusesQuery.isError ||
+                  recurrenceTypesQuery.isPending
                 }
               >
                 {updateTaskMutation.isPending ? "Сохраняем…" : "Сохранить"}

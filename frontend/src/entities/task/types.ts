@@ -20,6 +20,7 @@ export type TaskStatus = {
 };
 
 export type TaskListPreset = "today" | "tomorrow" | "week" | "no_date" | "all";
+export type TaskDeadlinePreset = "overdue" | "today" | "soon";
 
 export type TaskSort =
   | "created_at_desc"
@@ -31,6 +32,8 @@ export type TaskListParams = {
   preset: TaskListPreset;
   statuses: TaskStatusCode[];
   deadline_date?: string;
+  deadline_preset?: TaskDeadlinePreset;
+  timezone?: string;
   q: string;
   sort: TaskSort;
   limit: number;

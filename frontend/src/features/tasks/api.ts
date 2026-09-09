@@ -28,6 +28,14 @@ export function getTasks(params: TaskListParams): Promise<TaskListResponse> {
     searchParams.set("deadline_date", params.deadline_date);
   }
 
+  if (params.deadline_preset) {
+    searchParams.set("deadline_preset", params.deadline_preset);
+  }
+
+  if (params.timezone) {
+    searchParams.set("timezone", params.timezone);
+  }
+
   if (params.q.trim()) {
     searchParams.set("q", params.q.trim());
   }

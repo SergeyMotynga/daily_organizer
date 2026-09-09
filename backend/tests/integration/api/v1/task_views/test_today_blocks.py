@@ -54,10 +54,10 @@ async def test_today_view_groups_tasks_by_blocks(client: AsyncClient) -> None:
 
 
 @pytest.mark.anyio
-async def test_today_view_does_not_duplicate_task_between_regular_blocks(
+async def test_planned_tasks_are_also_visible_in_attention_blocks(
     client: AsyncClient,
 ) -> None:
-    """Экран Сегодня не дублирует задачу между обычными блоками."""
+    """План на сегодня сохраняет задачи, которые также требуют внимания."""
     await auth_client(client)
     today = utc_now().date()
     await create_task(
@@ -81,8 +81,13 @@ async def test_today_view_does_not_duplicate_task_between_regular_blocks(
 
     assert response.status_code == 200
     payload = response.json()
-    ids = regular_block_ids(payload)
-    assert len(ids) == len(set(ids))
-    assert block_titles(payload, "planned_today") == []
+    assert block_titles(payload, "planned_today") == [
+        "Запланирована просроченная",
+        "Запланирована с дедлайном сегодня",
+    ]
     assert block_titles(payload, "today_deadline") == ["Запланирована с дедлайном сегодня"]
     assert block_titles(payload, "overdue") == ["Запланирована просроченная"]
+    for block_name in ("planned_today", "today_deadline", "overdue"):
+        block_ids = [task["id"] for task in payload["blocks"][block_name]]
+        assert len(block_ids) == len(set(block_ids))
+    assert payload["summary"]["total_active"] == 2

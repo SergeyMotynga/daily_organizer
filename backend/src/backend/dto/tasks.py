@@ -3,7 +3,7 @@
 from dataclasses import dataclass
 from datetime import date
 
-from backend.domain.tasks import TaskListPreset, TaskSort, TaskStatusCode
+from backend.domain.tasks import TaskDeadlinePreset, TaskListPreset, TaskSort, TaskStatusCode
 
 
 @dataclass(frozen=True)
@@ -41,6 +41,8 @@ class TaskListQuery:
     statuses: list[TaskStatusCode] | None = None
     planned_date: date | None = None
     deadline_date: date | None = None
+    deadline_preset: TaskDeadlinePreset | None = None
+    timezone: str = "UTC"
     q: str | None = None
     sort: TaskSort = TaskSort.created_at_desc
 
@@ -54,5 +56,7 @@ class TaskListFilters:
     planned_date_to: date | None = None
     planned_date_is_null: bool = False
     deadline_date: date | None = None
+    deadline_date_from: date | None = None
+    deadline_date_to: date | None = None
     q: str | None = None
     sort: TaskSort = TaskSort.created_at_desc

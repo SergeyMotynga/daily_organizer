@@ -28,3 +28,11 @@ class TaskListPreset(StrEnum):
     week = "week"
     no_date = "no_date"
     all = "all"
+
+
+class TaskDeadlinePreset(StrEnum):
+    """Поддерживаемые пресеты дедлайна списка задач."""
+
+    overdue = "overdue"
+    today = "today"
+    soon = "soon"

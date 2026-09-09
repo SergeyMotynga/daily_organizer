@@ -51,6 +51,7 @@ async def list_tasks(
     task_service: Annotated[TaskService, Depends(get_task_service)],
     preset: Annotated[TaskListPreset, Query()] = TaskListPreset.all,
     statuses: Annotated[str | None, Query()] = None,
+    archived: Annotated[bool, Query()] = False,
     planned_date: Annotated[date | None, Query()] = None,
     deadline_date: Annotated[date | None, Query()] = None,
     deadline_preset: Annotated[TaskDeadlinePreset | None, Query()] = None,
@@ -66,6 +67,7 @@ async def list_tasks(
         query=TaskListQuery(
             preset=preset,
             statuses=parse_csv_enum(statuses, TaskStatusCode, param_name="statuses"),
+            archived=archived,
             planned_date=planned_date,
             deadline_date=deadline_date,
             deadline_preset=deadline_preset,
@@ -110,6 +112,7 @@ async def update_task(
             planned_time=payload.planned_time,
             deadline_date=payload.deadline_date,
             status=payload.status,
+            archived=payload.archived,
         ),
     )
 

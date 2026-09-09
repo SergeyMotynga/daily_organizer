@@ -43,21 +43,31 @@ async def test_today_view_excludes_archived_tasks(client: AsyncClient) -> None:
     """Экран Сегодня не возвращает архивные задачи в блоках и сводке."""
     await auth_client(client)
     today = utc_now().date()
-    archived = await create_task(
+    archived_todo = await create_task(
         client,
         {
-            "title": "Архивная с датами",
-            "status": "archived",
+            "title": "Архивная активная с датами",
             "planned_date": today.isoformat(),
             "deadline_date": today.isoformat(),
         },
     )
+    archived_done = await create_task(
+        client,
+        {"title": "Архивная выполненная", "status": "done"},
+    )
+    for task in (archived_todo, archived_done):
+        archive_response = await client.patch(
+            f"/api/v1/tasks/{task['id']}",
+            json={"archived": True},
+        )
+        assert archive_response.status_code == 200
 
     response = await client.get("/api/v1/task-views/today", params={"timezone": "UTC"})
 
     assert response.status_code == 200
     payload = response.json()
-    assert archived["id"] not in regular_block_ids(payload)
+    assert archived_todo["id"] not in regular_block_ids(payload)
+    assert archived_done["id"] not in regular_block_ids(payload)
     assert payload["blocks"]["done_today"] == []
     assert payload["summary"] == {
         "total_active": 0,

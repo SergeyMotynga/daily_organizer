@@ -8,7 +8,6 @@ class TaskStatusCode(StrEnum):
 
     todo = "todo"
     done = "done"
-    archived = "archived"
 
 
 class TaskSort(StrEnum):

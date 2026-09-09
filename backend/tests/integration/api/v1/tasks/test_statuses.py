@@ -16,5 +16,4 @@ async def test_list_task_statuses_returns_active_statuses(client: AsyncClient) -
     assert response.json() == [
         {"code": "todo", "title": "Активная", "sort_order": 10},
         {"code": "done", "title": "Выполненная", "sort_order": 20},
-        {"code": "archived", "title": "Архивная", "sort_order": 30},
     ]

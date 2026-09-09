@@ -21,11 +21,16 @@ def titles(payload: dict[str, object]) -> list[str]:
 
 @pytest.mark.anyio
 async def test_list_tasks_default_excludes_archived(client: AsyncClient) -> None:
-    """Список без statuses возвращает todo и done без archived."""
+    """Обычный список исключает задачи с archived_at."""
     await auth_client(client)
     await create_task(client, {"title": "Активная"})
     await create_task(client, {"title": "Выполненная", "status": "done"})
-    await create_task(client, {"title": "Архивная", "status": "archived"})
+    archived = await create_task(client, {"title": "Архивная"})
+    archive_response = await client.patch(
+        f"/api/v1/tasks/{archived['id']}",
+        json={"archived": True},
+    )
+    assert archive_response.status_code == 200
 
     response = await client.get("/api/v1/tasks")
 
@@ -41,12 +46,49 @@ async def test_list_tasks_filters_multiple_statuses(client: AsyncClient) -> None
     await auth_client(client)
     await create_task(client, {"title": "Активная"})
     await create_task(client, {"title": "Выполненная", "status": "done"})
-    await create_task(client, {"title": "Архивная", "status": "archived"})
 
-    response = await client.get("/api/v1/tasks?statuses=todo,archived")
+    response = await client.get("/api/v1/tasks?statuses=todo,done")
 
     assert response.status_code == 200
-    assert {item["status"] for item in response.json()["items"]} == {"todo", "archived"}
+    assert {item["status"] for item in response.json()["items"]} == {"todo", "done"}
+
+
+@pytest.mark.anyio
+async def test_list_archived_tasks_preserves_execution_statuses(client: AsyncClient) -> None:
+    """Архивный список возвращает todo и done по archived_at."""
+    await auth_client(client)
+    todo_task = await create_task(client, {"title": "Архивная активная"})
+    done_task = await create_task(
+        client,
+        {"title": "Архивная выполненная", "status": "done"},
+    )
+    await create_task(client, {"title": "Обычная"})
+
+    for task in (todo_task, done_task):
+        response = await client.patch(
+            f"/api/v1/tasks/{task['id']}",
+            json={"archived": True},
+        )
+        assert response.status_code == 200
+
+    response = await client.get("/api/v1/tasks?archived=true&statuses=todo,done")
+
+    assert response.status_code == 200
+    items = response.json()["items"]
+    assert {item["title"] for item in items} == {"Архивная активная", "Архивная выполненная"}
+    assert {item["status"] for item in items} == {"todo", "done"}
+    assert all(item["archived_at"] is not None for item in items)
+
+
+@pytest.mark.anyio
+async def test_list_tasks_rejects_archived_status_filter(client: AsyncClient) -> None:
+    """Фильтр statuses не принимает archived."""
+    await auth_client(client)
+
+    response = await client.get("/api/v1/tasks?statuses=archived")
+
+    assert response.status_code == 422
+    assert response.json()["error"]["code"] == "VALIDATION_ERROR"
 
 
 @pytest.mark.anyio

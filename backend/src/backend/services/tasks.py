@@ -8,7 +8,7 @@ from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.core.security import utc_now
-from backend.domain.tasks import TaskListPreset, TaskStatusCode
+from backend.domain.tasks import TaskDeadlinePreset, TaskListPreset, TaskStatusCode
 from backend.dto.common import PaginationParams
 from backend.dto.tasks import TaskCreateData, TaskListFilters, TaskListQuery, TaskUpdateData
 from backend.exceptions.tasks import (
@@ -110,7 +110,9 @@ class TaskService:
         pagination: PaginationParams,
     ) -> TaskListResult:
         """Возвращает страницу задач пользователя."""
-        filters = self._build_filters(query, utc_now().date())
+        timezone = self._get_timezone(query.timezone)
+        today = utc_now().astimezone(timezone).date()
+        filters = self._build_filters(query, today)
         items, total = await self.tasks.list_tasks_for_user(
             user_id=user.id,
             filters=filters,
@@ -133,14 +135,15 @@ class TaskService:
             completed_at_to=completed_at_to,
         )
         blocks = self._build_today_view_blocks(tasks, today, deadline_to)
+        active_tasks = (
+            blocks.planned_today
+            + blocks.inbox
+            + blocks.soon_deadline
+            + blocks.today_deadline
+            + blocks.overdue
+        )
         summary = TodayViewSummaryResult(
-            total_active=(
-                len(blocks.planned_today)
-                + len(blocks.inbox)
-                + len(blocks.soon_deadline)
-                + len(blocks.today_deadline)
-                + len(blocks.overdue)
-            ),
+            total_active=len({task.id for task in active_tasks}),
             done_today=len(blocks.done_today),
             overdue=len(blocks.overdue),
             today_deadline=len(blocks.today_deadline),
@@ -201,6 +204,8 @@ class TaskService:
         planned_date_from = None
         planned_date_to = None
         planned_date_is_null = False
+        deadline_date_from = None
+        deadline_date_to = None
 
         if query.preset == TaskListPreset.today:
             planned_date_from = today
@@ -220,12 +225,29 @@ class TaskService:
             planned_date_to = query.planned_date
             planned_date_is_null = False
 
+        if query.deadline_preset is not None and query.deadline_date is None:
+            statuses = [status for status in statuses if status == TaskStatusCode.todo]
+            if query.deadline_preset == TaskDeadlinePreset.overdue:
+                deadline_date_to = today - timedelta(days=1)
+            elif query.deadline_preset == TaskDeadlinePreset.today:
+                deadline_date_from = today
+                deadline_date_to = today
+            elif query.deadline_preset == TaskDeadlinePreset.soon:
+                deadline_date_from = today + timedelta(days=1)
+                deadline_date_to = today + timedelta(days=3)
+
+        if query.deadline_date is not None:
+            deadline_date_from = None
+            deadline_date_to = None
+
         return TaskListFilters(
             statuses=statuses,
             planned_date_from=planned_date_from,
             planned_date_to=planned_date_to,
             planned_date_is_null=planned_date_is_null,
             deadline_date=query.deadline_date,
+            deadline_date_from=deadline_date_from,
+            deadline_date_to=deadline_date_to,
             q=query.q,
             sort=query.sort,
         )
@@ -263,14 +285,21 @@ class TaskService:
             if task.status_code != TaskStatusCode.todo.value:
                 continue
 
+            if task.planned_date == today:
+                planned_today.append(task)
+
             if task.deadline_date is not None and task.deadline_date < today:
                 overdue.append(task)
+                continue
             elif task.deadline_date == today:
                 today_deadline.append(task)
-            elif task.deadline_date is not None and task.deadline_date <= deadline_to:
+                continue
+
+            if task.planned_date == today:
+                continue
+
+            if task.deadline_date is not None and task.deadline_date <= deadline_to:
                 soon_deadline.append(task)
-            elif task.planned_date == today:
-                planned_today.append(task)
             elif task.planned_date is None:
                 inbox.append(task)
 

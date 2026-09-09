@@ -8,7 +8,7 @@ from fastapi import APIRouter, Depends, Query, status
 
 from backend.api.deps import get_current_user, get_task_service
 from backend.api.query_params import normalize_optional_query_text, parse_csv_enum
-from backend.domain.tasks import TaskListPreset, TaskSort, TaskStatusCode
+from backend.domain.tasks import TaskDeadlinePreset, TaskListPreset, TaskSort, TaskStatusCode
 from backend.dto.common import PaginationParams
 from backend.dto.tasks import TaskCreateData, TaskListQuery, TaskUpdateData
 from backend.models.task import Task
@@ -52,6 +52,8 @@ async def list_tasks(
     statuses: Annotated[str | None, Query()] = None,
     planned_date: Annotated[date | None, Query()] = None,
     deadline_date: Annotated[date | None, Query()] = None,
+    deadline_preset: Annotated[TaskDeadlinePreset | None, Query()] = None,
+    timezone: Annotated[str, Query(min_length=1, max_length=255)] = "UTC",
     q: Annotated[str | None, Query()] = None,
     sort: Annotated[TaskSort, Query()] = TaskSort.created_at_desc,
     limit: Annotated[int, Query(ge=1, le=100)] = 50,
@@ -65,6 +67,8 @@ async def list_tasks(
             statuses=parse_csv_enum(statuses, TaskStatusCode, param_name="statuses"),
             planned_date=planned_date,
             deadline_date=deadline_date,
+            deadline_preset=deadline_preset,
+            timezone=timezone,
             q=normalize_optional_query_text(q),
             sort=sort,
         ),

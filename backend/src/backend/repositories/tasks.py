@@ -151,6 +151,11 @@ class TaskRepository:
 
         if filters.deadline_date is not None:
             statement = statement.where(Task.deadline_date == filters.deadline_date)
+        else:
+            if filters.deadline_date_from is not None:
+                statement = statement.where(Task.deadline_date >= filters.deadline_date_from)
+            if filters.deadline_date_to is not None:
+                statement = statement.where(Task.deadline_date <= filters.deadline_date_to)
 
         if filters.q is not None:
             query = f"%{filters.q}%"

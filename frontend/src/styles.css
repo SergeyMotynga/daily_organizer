@@ -2118,11 +2118,15 @@ a.today-summary-card:focus-visible {
 }
 
 .planning-table tbody .planning-task-row--danger td {
-  background: #fffafa;
+  background: #fff5f5;
 }
 
 .planning-table tbody .planning-task-row--danger:hover td {
-  background: #fff6f6;
+  background: #ffeded;
+}
+
+.planning-table tbody .planning-task-row--danger td:first-child {
+  box-shadow: inset 3px 0 0 #ef9a9a;
 }
 
 .planning-table tbody .planning-task-row--warning td {
@@ -2258,6 +2262,7 @@ a.today-summary-card:focus-visible {
 
 .planning-deadline--danger {
   color: var(--color-danger);
+  font-weight: 700;
 }
 
 .planning-deadline--default {

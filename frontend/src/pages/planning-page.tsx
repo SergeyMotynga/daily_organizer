@@ -16,6 +16,7 @@ import { useSearchParams } from "react-router";
 
 import type {
   Task,
+  TaskDeadlinePreset,
   TaskListParams,
   TaskListPreset,
   TaskSort,
@@ -43,6 +44,12 @@ const sortOptions: { value: TaskSort; label: string }[] = [
   { value: "created_at_desc", label: "Сначала новые" },
   { value: "created_at_asc", label: "Сначала старые" }
 ];
+
+const deadlinePresetLabels: Record<TaskDeadlinePreset, string> = {
+  overdue: "просрочено",
+  today: "сегодня",
+  soon: "в ближайшие 3 дня"
+};
 
 function getPreset(searchParams: URLSearchParams): TaskListPreset {
   const preset = searchParams.get("preset");
@@ -80,10 +87,14 @@ function getOffset(searchParams: URLSearchParams): number {
 
 function getDeadlineDate(searchParams: URLSearchParams): string | undefined {
   const deadlineDate = searchParams.get("deadline_date");
-  if (deadlineDate === "today") {
-    return getLocalDate();
-  }
   return deadlineDate && /^\d{4}-\d{2}-\d{2}$/.test(deadlineDate) ? deadlineDate : undefined;
+}
+
+function getDeadlinePreset(searchParams: URLSearchParams): TaskDeadlinePreset | undefined {
+  const deadlinePreset = searchParams.get("deadline_preset");
+  return deadlinePreset && deadlinePreset in deadlinePresetLabels
+    ? (deadlinePreset as TaskDeadlinePreset)
+    : undefined;
 }
 
 function getLocalDate(offset = 0): string {
@@ -225,6 +236,10 @@ export function PlanningPage() {
   const limit = getLimit(searchParams);
   const offset = getOffset(searchParams);
   const deadlineDate = getDeadlineDate(searchParams);
+  const deadlinePreset = getDeadlinePreset(searchParams);
+  const timezone = deadlinePreset
+    ? Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC"
+    : undefined;
   const hasCustomQuery = searchParams.toString().length > 0;
   const [isCreateTaskOpen, setIsCreateTaskOpen] = useState(false);
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
@@ -238,6 +253,8 @@ export function PlanningPage() {
     preset,
     statuses: selectedStatuses,
     deadline_date: deadlineDate,
+    deadline_preset: deadlinePreset,
+    timezone,
     q: search,
     sort,
     limit,
@@ -272,7 +289,12 @@ export function PlanningPage() {
   }
 
   function changePreset(value: TaskListPreset) {
-    updateSearchParams({ preset: value, deadline_date: null, offset: null });
+    updateSearchParams({
+      preset: value,
+      deadline_date: null,
+      deadline_preset: null,
+      offset: null
+    });
   }
 
   function toggleStatus(status: TaskStatusCode) {
@@ -399,7 +421,9 @@ export function PlanningPage() {
         {hasCustomQuery ? (
           <div className="planning-active-filter" role="status">
             <span>
-              {deadlineDate
+              {deadlinePreset
+                ? `Дедлайн: ${deadlinePresetLabels[deadlinePreset]}`
+                : deadlineDate
                 ? `Дедлайн: ${searchParams.get("deadline_date") === "today" ? "сегодня" : formatShortDate(deadlineDate)}`
                 : "Применены фильтры и настройки списка"}
             </span>

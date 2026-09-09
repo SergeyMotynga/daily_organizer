@@ -197,17 +197,20 @@ function AttentionCard({
       </header>
       <Link
         className="today-attention-row today-attention-row--link"
-        to="/app/planning?deadline_date=today&statuses=todo"
+        to="/app/planning?deadline_preset=today&statuses=todo"
       >
         <span>Дедлайн сегодня</span>
         <strong className="today-attention-row--warning">{todayDeadline}</strong>
         <ChevronRight size={16} aria-hidden="true" />
       </Link>
-      <div className="today-attention-row">
+      <Link
+        className="today-attention-row today-attention-row--link"
+        to="/app/planning?deadline_preset=overdue&statuses=todo"
+      >
         <span>Просрочено</span>
         <strong className="today-attention-row--danger">{overdue}</strong>
         <ChevronRight size={16} aria-hidden="true" />
-      </div>
+      </Link>
     </section>
   );
 }
@@ -299,9 +302,15 @@ function TodayContent({
       value: summary.today_deadline,
       icon: Clock3,
       tone: "warning",
-      to: "/app/planning?deadline_date=today&statuses=todo"
+      to: "/app/planning?deadline_preset=today&statuses=todo"
     },
-    { label: "Просрочено", value: summary.overdue, icon: AlertCircle, tone: "danger" },
+    {
+      label: "Просрочено",
+      value: summary.overdue,
+      icon: AlertCircle,
+      tone: "danger",
+      to: "/app/planning?deadline_preset=overdue&statuses=todo"
+    },
     {
       label: "Выполнено",
       value: summary.done_today,
@@ -405,7 +414,7 @@ function TodayContent({
               tasks={soonDeadline}
               today={data.date}
               showDeadline
-              moreTo="/app/planning?statuses=todo&sort=deadline_date_asc"
+              moreTo="/app/planning?deadline_preset=soon&statuses=todo"
               onOpenTask={onOpenTask}
             />
           </aside>

@@ -204,7 +204,7 @@ function PlanningTaskRow({
       <td>
         <span className={task.planned_date ? "planning-date" : "planning-date planning-date--muted"}>
           <CalendarDays size={15} aria-hidden="true" />
-          {getPlannedDateLabel(task.planned_date)}
+          {getPlannedDateLabel(task.planned_date)} · {task.planned_time ?? "—"}
         </span>
       </td>
       <td>

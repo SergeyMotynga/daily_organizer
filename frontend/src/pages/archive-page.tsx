@@ -81,7 +81,8 @@ function ArchiveTaskRow({
       <td>
         <span className={task.planned_date ? "archive-date" : "archive-date archive-date--muted"}>
           {task.planned_date ? <CalendarDays size={14} aria-hidden="true" /> : null}
-          {task.planned_date ? formatDate(task.planned_date) : "Без даты"}
+          {task.planned_date ? formatDate(task.planned_date) : "Без даты"} ·{" "}
+          {task.planned_time ?? "—"}
         </span>
       </td>
       <td>

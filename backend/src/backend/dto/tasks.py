@@ -1,7 +1,7 @@
 """Внутренние DTO task-модуля."""
 
 from dataclasses import dataclass
-from datetime import date
+from datetime import date, time
 
 from backend.domain.tasks import TaskDeadlinePreset, TaskListPreset, TaskSort, TaskStatusCode
 
@@ -13,6 +13,7 @@ class TaskCreateData:
     title: str
     description: str | None = None
     planned_date: date | None = None
+    planned_time: time | None = None
     deadline_date: date | None = None
     status: TaskStatusCode | None = None
 
@@ -25,6 +26,7 @@ class TaskUpdateData:
     title: str | None = None
     description: str | None = None
     planned_date: date | None = None
+    planned_time: time | None = None
     deadline_date: date | None = None
     status: TaskStatusCode | None = None
 

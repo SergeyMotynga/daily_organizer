@@ -141,6 +141,40 @@ async def test_list_tasks_sorts_by_dates(client: AsyncClient) -> None:
 
 
 @pytest.mark.anyio
+async def test_list_tasks_sorts_planned_time_within_date_nulls_last(
+    client: AsyncClient,
+) -> None:
+    """Сортировка по плановой дате учитывает время и ставит null в конец даты."""
+    await auth_client(client)
+    await create_task(
+        client,
+        {"title": "Без времени", "planned_date": "2026-09-05"},
+    )
+    await create_task(
+        client,
+        {"title": "Позднее время", "planned_date": "2026-09-05", "planned_time": "18:00"},
+    )
+    await create_task(
+        client,
+        {"title": "Раннее время", "planned_date": "2026-09-05", "planned_time": "09:00"},
+    )
+    await create_task(
+        client,
+        {"title": "Следующий день", "planned_date": "2026-09-06", "planned_time": "08:00"},
+    )
+
+    response = await client.get("/api/v1/tasks?sort=planned_date_asc")
+
+    assert response.status_code == 200
+    assert titles(response.json()) == [
+        "Раннее время",
+        "Позднее время",
+        "Без времени",
+        "Следующий день",
+    ]
+
+
+@pytest.mark.anyio
 async def test_list_tasks_sorts_by_created_at(
     client: AsyncClient,
     test_sessionmaker: async_sessionmaker[AsyncSession],

@@ -36,6 +36,34 @@ async def test_create_task_accepts_todo_status(client: AsyncClient) -> None:
 
 
 @pytest.mark.anyio
+async def test_create_task_with_planned_time(client: AsyncClient) -> None:
+    """Создание задачи принимает и возвращает плановое время в формате HH:MM."""
+    await auth_client(client)
+
+    task = await create_task(
+        client,
+        {"title": "Встреча", "planned_date": "2026-09-10", "planned_time": "10:30"},
+    )
+
+    assert task["planned_date"] == "2026-09-10"
+    assert task["planned_time"] == "10:30"
+
+
+@pytest.mark.anyio
+async def test_create_task_rejects_planned_time_with_seconds(client: AsyncClient) -> None:
+    """Создание задачи отклоняет время не в формате HH:MM."""
+    await auth_client(client)
+
+    response = await client.post(
+        "/api/v1/tasks",
+        json={"title": "Встреча", "planned_time": "10:30:00"},
+    )
+
+    assert response.status_code == 422
+    assert response.json()["error"]["code"] == "VALIDATION_ERROR"
+
+
+@pytest.mark.anyio
 async def test_create_task_with_done_status_sets_completed_at(client: AsyncClient) -> None:
     """Создание выполненной задачи сразу ставит completed_at."""
     await auth_client(client)

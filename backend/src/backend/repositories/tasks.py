@@ -45,6 +45,7 @@ class TaskRepository:
             description=data.description,
             status_code=data.status.value if data.status is not None else None,
             planned_date=data.planned_date,
+            planned_time=data.planned_time,
             deadline_date=data.deadline_date,
         )
         self.db.add(task)
@@ -177,7 +178,11 @@ class TaskRepository:
         if sort == TaskSort.created_at_asc:
             return statement.order_by(asc(Task.created_at), asc(Task.id))
         if sort == TaskSort.planned_date_asc:
-            return statement.order_by(asc(Task.planned_date).nulls_last(), asc(Task.created_at))
+            return statement.order_by(
+                asc(Task.planned_date).nulls_last(),
+                asc(Task.planned_time).nulls_last(),
+                asc(Task.created_at),
+            )
         if sort == TaskSort.deadline_date_asc:
             return statement.order_by(asc(Task.deadline_date).nulls_last(), asc(Task.created_at))
 

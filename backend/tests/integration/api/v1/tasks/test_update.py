@@ -17,6 +17,7 @@ async def test_patch_task_fields(client: AsyncClient) -> None:
             "title": "  Новое название  ",
             "description": "  Новое описание  ",
             "planned_date": "2026-09-05",
+            "planned_time": "09:15",
             "deadline_date": "2026-09-06",
         },
     )
@@ -26,6 +27,7 @@ async def test_patch_task_fields(client: AsyncClient) -> None:
     assert updated_task["title"] == "Новое название"
     assert updated_task["description"] == "Новое описание"
     assert updated_task["planned_date"] == "2026-09-05"
+    assert updated_task["planned_time"] == "09:15"
     assert updated_task["deadline_date"] == "2026-09-06"
     assert "status_code" not in updated_task
 
@@ -40,6 +42,18 @@ async def test_patch_description_to_null(client: AsyncClient) -> None:
 
     assert response.status_code == 200
     assert response.json()["description"] is None
+
+
+@pytest.mark.anyio
+async def test_patch_planned_time_to_null(client: AsyncClient) -> None:
+    """PATCH с planned_time=null очищает плановое время."""
+    await auth_client(client)
+    task = await create_task(client, {"title": "Задача", "planned_time": "18:45"})
+
+    response = await client.patch(f"/api/v1/tasks/{task['id']}", json={"planned_time": None})
+
+    assert response.status_code == 200
+    assert response.json()["planned_time"] is None
 
 
 @pytest.mark.anyio

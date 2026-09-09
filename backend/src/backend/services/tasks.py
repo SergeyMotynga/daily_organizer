@@ -79,6 +79,7 @@ class TaskService:
             title=validate_task_title(data.title),
             description=data.description,
             planned_date=data.planned_date,
+            planned_time=data.planned_time,
             deadline_date=data.deadline_date,
             status=status,
         )
@@ -161,6 +162,8 @@ class TaskService:
             task.description = data.description
         if data.has("planned_date"):
             task.planned_date = data.planned_date
+        if data.has("planned_time"):
+            task.planned_time = data.planned_time
         if data.has("deadline_date"):
             task.deadline_date = data.deadline_date
         if data.has("status"):

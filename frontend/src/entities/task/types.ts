@@ -6,6 +6,7 @@ export type Task = {
   description: string | null;
   status: TaskStatusCode;
   planned_date: string | null;
+  planned_time: string | null;
   deadline_date: string | null;
   completed_at: string | null;
   archived_at: string | null;
@@ -54,6 +55,7 @@ export type CreateTaskPayload = {
   description: string | null;
   status: TaskStatusCode;
   planned_date: string | null;
+  planned_time: string | null;
   deadline_date: string | null;
 };
 

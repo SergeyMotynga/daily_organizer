@@ -1,5 +1,5 @@
 import { useEffect, useState, type FormEvent } from "react";
-import { AlertTriangle, CalendarDays, Info, X } from "lucide-react";
+import { AlertTriangle, CalendarDays, Clock3, Info, X } from "lucide-react";
 
 import type { TaskStatusCode } from "../../entities/task/types";
 import { useCreateTaskMutation, useTaskStatusesQuery } from "./queries";
@@ -29,6 +29,7 @@ export function CreateTaskDrawer({ onClose }: CreateTaskDrawerProps) {
   const [description, setDescription] = useState("");
   const [status, setStatus] = useState<TaskStatusCode>("todo");
   const [plannedDate, setPlannedDate] = useState("");
+  const [plannedTime, setPlannedTime] = useState("");
   const [deadlineDate, setDeadlineDate] = useState("");
   const [titleError, setTitleError] = useState<string | null>(null);
   const todayDate = getRelativeDate(0);
@@ -70,6 +71,7 @@ export function CreateTaskDrawer({ onClose }: CreateTaskDrawerProps) {
         description: description.trim() || null,
         status,
         planned_date: plannedDate || null,
+        planned_time: plannedTime || null,
         deadline_date: deadlineDate || null
       });
       onClose();
@@ -211,15 +213,26 @@ export function CreateTaskDrawer({ onClose }: CreateTaskDrawerProps) {
                   Без даты
                 </button>
               </div>
-              <label className="task-date-input">
-                <CalendarDays size={17} aria-hidden="true" />
-                <input
-                  type="date"
-                  value={plannedDate}
-                  onChange={(event) => setPlannedDate(event.target.value)}
-                  aria-label="Плановая дата"
-                />
-              </label>
+              <div className="task-plan-inputs">
+                <label className="task-date-input">
+                  <CalendarDays size={17} aria-hidden="true" />
+                  <input
+                    type="date"
+                    value={plannedDate}
+                    onChange={(event) => setPlannedDate(event.target.value)}
+                    aria-label="Плановая дата"
+                  />
+                </label>
+                <label className="task-date-input">
+                  <Clock3 size={17} aria-hidden="true" />
+                  <input
+                    type="time"
+                    value={plannedTime}
+                    onChange={(event) => setPlannedTime(event.target.value)}
+                    aria-label="Плановое время"
+                  />
+                </label>
+              </div>
             </fieldset>
 
             <label className="task-create-field">

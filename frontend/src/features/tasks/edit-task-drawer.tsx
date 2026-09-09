@@ -1,5 +1,5 @@
 import { useEffect, useState, type FormEvent } from "react";
-import { AlertCircle, AlertTriangle, CalendarDays, Info, Trash2, X } from "lucide-react";
+import { AlertCircle, AlertTriangle, CalendarDays, Clock3, Info, Trash2, X } from "lucide-react";
 
 import type { TaskStatusCode } from "../../entities/task/types";
 import {
@@ -23,6 +23,7 @@ export function EditTaskDrawer({ taskId, onClose }: EditTaskDrawerProps) {
   const [description, setDescription] = useState("");
   const [status, setStatus] = useState<TaskStatusCode>("todo");
   const [plannedDate, setPlannedDate] = useState("");
+  const [plannedTime, setPlannedTime] = useState("");
   const [deadlineDate, setDeadlineDate] = useState("");
   const [titleError, setTitleError] = useState<string | null>(null);
   const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
@@ -38,6 +39,7 @@ export function EditTaskDrawer({ taskId, onClose }: EditTaskDrawerProps) {
     setDescription(taskQuery.data.description ?? "");
     setStatus(taskQuery.data.status);
     setPlannedDate(taskQuery.data.planned_date ?? "");
+    setPlannedTime(taskQuery.data.planned_time ?? "");
     setDeadlineDate(taskQuery.data.deadline_date ?? "");
   }, [taskQuery.data]);
 
@@ -78,6 +80,7 @@ export function EditTaskDrawer({ taskId, onClose }: EditTaskDrawerProps) {
           description: description.trim() || null,
           status,
           planned_date: plannedDate || null,
+          planned_time: plannedTime || null,
           deadline_date: deadlineDate || null
         }
       });
@@ -220,18 +223,29 @@ export function EditTaskDrawer({ taskId, onClose }: EditTaskDrawerProps) {
                 ) : null}
               </fieldset>
 
-              <label className="task-create-field">
+              <div className="task-create-field">
                 <span>Когда делать (план)</span>
-                <span className="task-date-input">
-                  <CalendarDays size={17} aria-hidden="true" />
-                  <input
-                    type="date"
-                    value={plannedDate}
-                    onChange={(event) => setPlannedDate(event.target.value)}
-                    aria-label="Плановая дата"
-                  />
-                </span>
-              </label>
+                <div className="task-plan-inputs">
+                  <label className="task-date-input">
+                    <CalendarDays size={17} aria-hidden="true" />
+                    <input
+                      type="date"
+                      value={plannedDate}
+                      onChange={(event) => setPlannedDate(event.target.value)}
+                      aria-label="Плановая дата"
+                    />
+                  </label>
+                  <label className="task-date-input">
+                    <Clock3 size={17} aria-hidden="true" />
+                    <input
+                      type="time"
+                      value={plannedTime}
+                      onChange={(event) => setPlannedTime(event.target.value)}
+                      aria-label="Плановое время"
+                    />
+                  </label>
+                </div>
+              </div>
 
               <label className="task-create-field">
                 <span>Дедлайн</span>

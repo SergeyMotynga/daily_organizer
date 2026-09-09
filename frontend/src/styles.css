@@ -2706,6 +2706,12 @@ a.today-summary-card:focus-visible {
   color: var(--color-brand);
 }
 
+.task-plan-inputs {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(120px, 0.55fr);
+  gap: 10px;
+}
+
 .task-date-input {
   display: flex;
   min-height: 44px;

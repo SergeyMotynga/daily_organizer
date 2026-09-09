@@ -89,7 +89,14 @@ function sortTasks(tasks: Task[], sort: TodaySort): Task[] {
     if (!leftDate && !rightDate) return 0;
     if (!leftDate) return 1;
     if (!rightDate) return -1;
-    return leftDate.localeCompare(rightDate);
+    const dateComparison = leftDate.localeCompare(rightDate);
+    if (dateComparison !== 0 || sort !== "planned_date_asc") {
+      return dateComparison;
+    }
+    if (!left.planned_time && !right.planned_time) return 0;
+    if (!left.planned_time) return 1;
+    if (!right.planned_time) return -1;
+    return left.planned_time.localeCompare(right.planned_time);
   });
 }
 
@@ -127,10 +134,12 @@ function TaskRow({
       {displayDate ? (
         <span className="today-task__date">
           <CalendarDays size={15} />
-          {formatTaskDate(displayDate, today)}
+          {formatTaskDate(displayDate, today)} · {task.planned_time ?? "—"}
         </span>
       ) : (
-        <span className="today-task__date today-task__date--muted">Без даты</span>
+        <span className="today-task__date today-task__date--muted">
+          Без даты · {task.planned_time ?? "—"}
+        </span>
       )}
       <button
         className="today-task__archive"
@@ -247,9 +256,12 @@ function CompactTaskCard({
                 <button type="button" onClick={() => onOpenTask(task.id)}>
                   {task.title}
                 </button>
-                {showDeadline && task.deadline_date ? (
-                  <span>{formatTaskDate(task.deadline_date, today)}</span>
-                ) : null}
+                <span>
+                  {showDeadline && task.deadline_date
+                    ? `${formatTaskDate(task.deadline_date, today)} · `
+                    : ""}
+                  {task.planned_time ?? "—"}
+                </span>
               </li>
             ))}
           </ul>

@@ -1,9 +1,9 @@
 """ORM-модели задач и системных статусов задач."""
 
-from datetime import date, datetime
+from datetime import date, datetime, time
 from uuid import UUID
 
-from sqlalchemy import Boolean, Date, DateTime, ForeignKey, Integer, String, Text, func, text
+from sqlalchemy import Boolean, Date, DateTime, ForeignKey, Integer, String, Text, Time, func, text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.types import Uuid
 
@@ -52,6 +52,7 @@ class Task(Base):
         index=True,
     )
     planned_date: Mapped[date | None] = mapped_column(Date, nullable=True)
+    planned_time: Mapped[time | None] = mapped_column(Time, nullable=True)
     deadline_date: Mapped[date | None] = mapped_column(Date, nullable=True)
     completed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     archived_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)

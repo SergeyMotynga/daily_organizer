@@ -104,6 +104,14 @@ export function TaskDetailsDrawer({ taskId, onClose }: TaskDetailsDrawerProps) {
     }
   }
 
+  async function changeArchiveState(archived: boolean) {
+    try {
+      await updateTaskMutation.mutateAsync({ taskId, payload: { archived } });
+    } catch {
+      // Ошибка mutation отображается в drawer.
+    }
+  }
+
   async function handleDelete() {
     try {
       await deleteTaskMutation.mutateAsync(taskId);
@@ -254,34 +262,32 @@ export function TaskDetailsDrawer({ taskId, onClose }: TaskDetailsDrawerProps) {
               </button>
 
               <div className="task-details__action-row">
-                {task.status !== "archived" ? (
-                  <button
-                    className="task-details-action"
-                    type="button"
-                    onClick={() => void changeStatus(task.status === "done" ? "todo" : "done")}
-                    disabled={isMutating}
-                  >
-                    {task.status === "done" ? (
-                      <RotateCcw size={17} aria-hidden="true" />
-                    ) : (
-                      <CheckCircle2 size={17} aria-hidden="true" />
-                    )}
-                    {task.status === "done" ? "Вернуть в активные" : "Выполнить"}
-                  </button>
-                ) : null}
+                <button
+                  className="task-details-action"
+                  type="button"
+                  onClick={() => void changeStatus(task.status === "done" ? "todo" : "done")}
+                  disabled={isMutating}
+                >
+                  {task.status === "done" ? (
+                    <RotateCcw size={17} aria-hidden="true" />
+                  ) : (
+                    <CheckCircle2 size={17} aria-hidden="true" />
+                  )}
+                  {task.status === "done" ? "Вернуть в активные" : "Выполнить"}
+                </button>
 
                 <button
                   className="task-details-action"
                   type="button"
-                  onClick={() => void changeStatus(task.status === "archived" ? "todo" : "archived")}
+                  onClick={() => void changeArchiveState(!task.archived_at)}
                   disabled={isMutating}
                 >
-                  {task.status === "archived" ? (
+                  {task.archived_at ? (
                     <RotateCcw size={17} aria-hidden="true" />
                   ) : (
                     <Archive size={17} aria-hidden="true" />
                   )}
-                  {task.status === "archived" ? "Вернуть из архива" : "Архивировать"}
+                  {task.archived_at ? "Вернуть из архива" : "Архивировать"}
                 </button>
               </div>
 

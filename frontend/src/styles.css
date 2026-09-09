@@ -1687,6 +1687,7 @@ a.today-summary-card:focus-visible {
 }
 
 .planning-active-filter button {
+  flex: 0 0 auto;
   min-height: 25px;
   padding: 0 9px;
   border: 1px solid #a9cdf8;
@@ -1695,6 +1696,7 @@ a.today-summary-card:focus-visible {
   color: var(--color-brand);
   font-size: 11px;
   font-weight: 700;
+  white-space: nowrap;
   cursor: pointer;
 }
 
@@ -2197,11 +2199,6 @@ a.today-summary-card:focus-visible {
   background: #e9f5eb;
 }
 
-.planning-task-check--archived {
-  border-color: #aab3bf;
-  background: #eef1f4;
-}
-
 .planning-task-check:disabled {
   cursor: default;
   opacity: 0.58;
@@ -2240,12 +2237,6 @@ a.today-summary-card:focus-visible {
   border-color: #d5e8d9;
   background: #f0f8f1;
   color: #438451;
-}
-
-.planning-status--archived {
-  border-color: #dce1e7;
-  background: #f4f5f7;
-  color: #6b7280;
 }
 
 .planning-date,
@@ -2660,12 +2651,6 @@ a.today-summary-card:focus-visible {
   color: #438451;
 }
 
-.task-details__status--archived {
-  border-color: #dce1e7;
-  background: #f4f5f7;
-  color: #6b7280;
-}
-
 .task-details__actions {
   display: grid;
   gap: 10px;
@@ -2843,7 +2828,7 @@ a.today-summary-card:focus-visible {
 
 .task-status-options {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 9px;
 }
 
@@ -3164,6 +3149,191 @@ p {
   line-height: 1.5;
 }
 
+@media (max-width: 900px) {
+  .auth-page {
+    align-items: flex-start;
+    padding: 32px 24px;
+  }
+
+  .auth-page__stage,
+  .auth-page--login .auth-page__stage,
+  .auth-page--register .auth-page__stage {
+    grid-template-columns: minmax(0, 620px);
+    gap: 36px;
+    width: 100%;
+  }
+
+  .auth-page__form-pane,
+  .auth-info {
+    width: 100%;
+    max-width: 620px;
+    justify-self: center;
+  }
+
+  .app-shell {
+    display: block;
+  }
+
+  .app-shell__sidebar {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-areas:
+      "brand account"
+      "nav nav";
+    gap: 12px 16px;
+    padding: 12px 24px;
+    border-right: 0;
+    border-bottom: 1px solid var(--color-border);
+    box-shadow: 0 4px 14px rgb(53 84 122 / 5%);
+  }
+
+  .app-shell__brand {
+    grid-area: brand;
+    min-width: 0;
+    margin: 0;
+  }
+
+  .app-shell__nav {
+    grid-area: nav;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .app-shell__nav-link {
+    justify-content: center;
+    min-width: 0;
+    padding: 0 10px;
+    text-align: center;
+  }
+
+  .app-shell__account {
+    grid-area: account;
+    grid-template-columns: 32px minmax(0, 1fr) auto;
+    min-width: 0;
+    margin: 0;
+    padding: 6px 8px;
+  }
+
+  .app-shell__avatar {
+    width: 32px;
+    height: 32px;
+  }
+
+  .app-shell__content {
+    min-width: 0;
+    padding: 24px;
+  }
+
+  .today-page,
+  .planning-page,
+  .archive-page {
+    height: auto;
+    min-height: calc(100dvh - 154px);
+  }
+
+  .app-shell__content:has(.planning-page) {
+    overflow: visible;
+  }
+
+  .today-summary,
+  .today-loading__cards {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .today-board {
+    grid-template-columns: minmax(0, 1fr);
+    overflow: visible;
+  }
+
+  .today-board__main,
+  .today-board__aside {
+    overflow: visible;
+  }
+
+  .today-board__aside {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    padding-right: 0;
+  }
+
+  .planning-toolbar {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  }
+
+  .planning-filter--presets,
+  .planning-filter:has(.planning-status-options) {
+    overflow-x: auto;
+    scrollbar-width: thin;
+  }
+
+  .planning-preset-options,
+  .planning-status-options {
+    width: max-content;
+    min-width: 100%;
+  }
+
+  .archive-toolbar {
+    align-items: stretch;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .archive-search,
+  .archive-sort,
+  .archive-sort select {
+    width: 100%;
+  }
+
+  .archive-table-card,
+  .planning-table-card,
+  .archive-table-scroll,
+  .planning-table-scroll {
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  .archive-table th:last-child,
+  .archive-table td:last-child,
+  .planning-table th:last-child,
+  .planning-table td:last-child {
+    position: sticky;
+    right: 0;
+    z-index: 2;
+    background: var(--color-surface);
+    box-shadow: -8px 0 12px rgb(53 84 122 / 7%);
+  }
+
+  .archive-table tbody tr:hover td:last-child,
+  .planning-table tbody tr:hover td:last-child {
+    background: #fafbfd;
+  }
+
+  .planning-table tbody .planning-task-row--danger td:last-child {
+    background: #fff5f5;
+  }
+
+  .planning-table tbody .planning-task-row--warning td:last-child {
+    background: #fffaf2;
+  }
+
+  .planning-empty,
+  .archive-empty,
+  .today-empty-state {
+    min-height: 220px;
+    padding: 28px 20px;
+  }
+
+  .planning-loading,
+  .archive-loading {
+    min-height: 292px;
+  }
+
+  .task-drawer {
+    width: min(100vw, 480px);
+  }
+}
+
 @media (max-width: 720px) {
   .auth-page {
     flex-direction: column;
@@ -3216,6 +3386,7 @@ p {
   }
 
   .app-shell__sidebar {
+    padding: 12px 16px;
     border-right: 0;
     border-bottom: 1px solid var(--color-border);
   }
@@ -3225,7 +3396,7 @@ p {
   }
 
   .app-shell__account {
-    margin-top: 16px;
+    margin-top: 0;
   }
 
   .app-shell__nav-link {
@@ -3234,6 +3405,10 @@ p {
 
   .app-shell__content {
     padding: 24px 16px;
+  }
+
+  .planning-toolbar {
+    grid-template-columns: minmax(0, 1fr);
   }
 
   .today-page__header {
@@ -3309,6 +3484,193 @@ p {
 
   .task-details__action-row > :only-child {
     grid-column: auto;
+  }
+}
+
+@media (max-width: 520px) {
+  .auth-page {
+    padding: 16px 12px 28px;
+  }
+
+  .auth-card--login,
+  .auth-card--register {
+    padding: 24px 16px;
+  }
+
+  .auth-card__brand {
+    font-size: 21px;
+  }
+
+  .auth-info {
+    padding: 0 4px;
+  }
+
+  .app-shell__sidebar {
+    gap: 10px;
+    padding: 10px 12px;
+  }
+
+  .app-shell__brand {
+    font-size: 16px;
+  }
+
+  .app-shell__brand .version-badge,
+  .app-shell__avatar,
+  .app-shell__user,
+  .app-shell__logout span {
+    display: none;
+  }
+
+  .app-shell__account {
+    display: block;
+    padding: 0;
+    border: 0;
+  }
+
+  .app-shell__logout {
+    width: 40px;
+    height: 40px;
+    justify-content: center;
+    padding: 0;
+    border: 1px solid var(--color-border);
+    border-radius: 8px;
+  }
+
+  .app-shell__nav-link {
+    flex-direction: column;
+    gap: 3px;
+    min-height: 48px;
+    padding: 5px 4px;
+    font-size: 11px;
+  }
+
+  .app-shell__content {
+    padding: 20px 12px;
+  }
+
+  .today-page__header,
+  .planning-page__header,
+  .archive-page__header {
+    gap: 12px;
+  }
+
+  .today-page__header h1,
+  .planning-page__header h1,
+  .archive-page__header h1 {
+    font-size: 26px;
+  }
+
+  .today-page__new-task,
+  .planning-page__new-task {
+    min-width: max-content;
+    padding: 0 14px;
+    font-size: 13px;
+    white-space: nowrap;
+  }
+
+  .today-summary-card {
+    min-height: 76px;
+    padding: 12px;
+  }
+
+  .today-summary-card strong {
+    font-size: 22px;
+  }
+
+  .today-board__toolbar {
+    align-items: stretch;
+    flex-direction: column;
+    padding: 10px 12px;
+  }
+
+  .today-board__toolbar label,
+  .today-board__toolbar select {
+    width: 100%;
+  }
+
+  .today-task {
+    grid-template-columns: 18px minmax(0, 1fr) 28px;
+    gap: 8px;
+    padding: 8px 12px;
+  }
+
+  .today-task__date {
+    grid-column: 2;
+    justify-self: start;
+  }
+
+  .today-task__archive {
+    grid-column: 3;
+    grid-row: 1 / span 2;
+    opacity: 1;
+  }
+
+  .planning-toolbar {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .archive-pagination,
+  .planning-pagination {
+    justify-content: center;
+  }
+
+  .archive-pagination > span,
+  .planning-pagination > span {
+    width: 100%;
+    text-align: center;
+  }
+
+  .task-drawer {
+    width: 100vw;
+    border-left: 0;
+  }
+
+  .task-drawer__header {
+    min-height: 64px;
+  }
+
+  .task-create-form__body {
+    gap: 18px;
+    padding-top: 18px;
+  }
+
+  .task-plan-inputs {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .task-date-shortcuts {
+    padding-bottom: 3px;
+    overflow-x: auto;
+  }
+
+  .task-date-shortcuts button {
+    flex: 0 0 auto;
+  }
+
+  .task-create-form__footer,
+  .task-details__actions {
+    padding-bottom: max(16px, env(safe-area-inset-bottom));
+  }
+
+  .task-create-form__footer {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .task-details__delete-confirm > div,
+  .task-edit-delete__confirm > div {
+    flex-wrap: wrap;
+  }
+}
+
+@media (max-width: 360px) {
+  .today-page__header,
+  .planning-page__header {
+    flex-wrap: wrap;
+  }
+
+  .today-page__new-task,
+  .planning-page__new-task {
+    width: 100%;
   }
 }
 

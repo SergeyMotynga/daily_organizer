@@ -239,6 +239,36 @@ async def test_list_tasks_filters_by_dates(client: AsyncClient) -> None:
 
 
 @pytest.mark.anyio
+async def test_list_tasks_filters_by_planned_range_and_prefers_exact_date(
+    client: AsyncClient,
+) -> None:
+    """Диапазон включителен, а planned_date имеет над ним приоритет."""
+    await auth_client(client)
+    await create_task(client, {"title": "До", "planned_date": "2026-09-08"})
+    await create_task(client, {"title": "Начало", "planned_date": "2026-09-09"})
+    await create_task(client, {"title": "Конец", "planned_date": "2026-09-15"})
+    await create_task(client, {"title": "После", "planned_date": "2026-09-16"})
+
+    range_response = await client.get(
+        "/api/v1/tasks",
+        params={"planned_from": "2026-09-09", "planned_to": "2026-09-15"},
+    )
+    exact_response = await client.get(
+        "/api/v1/tasks",
+        params={
+            "planned_date": "2026-09-16",
+            "planned_from": "2026-09-09",
+            "planned_to": "2026-09-15",
+        },
+    )
+
+    assert range_response.status_code == 200
+    assert set(titles(range_response.json())) == {"Начало", "Конец"}
+    assert exact_response.status_code == 200
+    assert titles(exact_response.json()) == ["После"]
+
+
+@pytest.mark.anyio
 async def test_list_tasks_searches_title_and_description(client: AsyncClient) -> None:
     """Поиск q ищет по названию и описанию без учета регистра."""
     await auth_client(client)

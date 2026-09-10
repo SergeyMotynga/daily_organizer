@@ -32,6 +32,9 @@ import {
   useUpdateTaskMutation
 } from "../features/tasks/queries";
 import { getRecurrenceLabel, isTaskRecurring } from "../features/tasks/recurrence";
+import type { DateRangeValue } from "../shared/date-values";
+import { formatCompactDate } from "../shared/date-values";
+import { DatePickerPopover } from "../shared/ui/date-picker-popover";
 
 const presets: { value: TaskListPreset; label: string }[] = [
   { value: "today", label: "Сегодня" },
@@ -98,6 +101,21 @@ function getDeadlinePreset(searchParams: URLSearchParams): TaskDeadlinePreset | 
   return deadlinePreset && deadlinePreset in deadlinePresetLabels
     ? (deadlinePreset as TaskDeadlinePreset)
     : undefined;
+}
+
+function getPlannedDate(searchParams: URLSearchParams): string | undefined {
+  const plannedDate = searchParams.get("planned_date");
+  return plannedDate && /^\d{4}-\d{2}-\d{2}$/.test(plannedDate) ? plannedDate : undefined;
+}
+
+function getPlannedRange(searchParams: URLSearchParams): DateRangeValue {
+  const plannedFrom = searchParams.get("planned_from");
+  const plannedTo = searchParams.get("planned_to");
+  return {
+    from:
+      plannedFrom && /^\d{4}-\d{2}-\d{2}$/.test(plannedFrom) ? plannedFrom : undefined,
+    to: plannedTo && /^\d{4}-\d{2}-\d{2}$/.test(plannedTo) ? plannedTo : undefined
+  };
 }
 
 function getLocalDate(offset = 0): string {
@@ -259,14 +277,19 @@ export function PlanningPage() {
   const sort = getSort(searchParams);
   const limit = getLimit(searchParams);
   const offset = getOffset(searchParams);
+  const plannedDate = getPlannedDate(searchParams);
+  const plannedRange = getPlannedRange(searchParams);
   const deadlineDate = getDeadlineDate(searchParams);
   const deadlinePreset = getDeadlinePreset(searchParams);
-  const timezone = deadlinePreset
+  const hasPlannedRange = Boolean(plannedRange.from || plannedRange.to);
+  const timezone = deadlinePreset || preset !== "all" || plannedDate
     ? Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC"
     : undefined;
   const hasActiveFilters =
     preset !== "all" ||
     search.trim().length > 0 ||
+    Boolean(plannedDate) ||
+    hasPlannedRange ||
     Boolean(deadlineDate) ||
     Boolean(deadlinePreset) ||
     selectedStatuses.length !== 2 ||
@@ -286,6 +309,9 @@ export function PlanningPage() {
   const queryParams: TaskListParams = {
     preset,
     statuses: selectedStatuses,
+    planned_date: plannedDate,
+    planned_from: plannedRange.from,
+    planned_to: plannedRange.to,
     deadline_date: deadlineDate,
     deadline_preset: deadlinePreset,
     timezone,
@@ -325,6 +351,33 @@ export function PlanningPage() {
   function changePreset(value: TaskListPreset) {
     updateSearchParams({
       preset: value,
+      planned_date: null,
+      planned_from: null,
+      planned_to: null,
+      deadline_date: null,
+      deadline_preset: null,
+      offset: null
+    });
+  }
+
+  function changePlannedDate(value: string) {
+    updateSearchParams({
+      planned_date: value,
+      planned_from: null,
+      planned_to: null,
+      preset: null,
+      deadline_date: null,
+      deadline_preset: null,
+      offset: null
+    });
+  }
+
+  function changePlannedRange(value: DateRangeValue) {
+    updateSearchParams({
+      planned_date: null,
+      planned_from: value.from ?? null,
+      planned_to: value.to ?? null,
+      preset: null,
       deadline_date: null,
       deadline_preset: null,
       offset: null
@@ -350,9 +403,17 @@ export function PlanningPage() {
 
   function resetFilters() {
     const nextSearchParams = new URLSearchParams(searchParams);
-    ["preset", "statuses", "q", "deadline_date", "deadline_preset", "offset"].forEach((key) =>
-      nextSearchParams.delete(key)
-    );
+    [
+      "preset",
+      "statuses",
+      "q",
+      "planned_date",
+      "planned_from",
+      "planned_to",
+      "deadline_date",
+      "deadline_preset",
+      "offset"
+    ].forEach((key) => nextSearchParams.delete(key));
     setSearchParams(nextSearchParams);
   }
 
@@ -396,16 +457,45 @@ export function PlanningPage() {
             <div className="planning-preset-options">
               {presets.map((option) => (
                 <button
-                  className={preset === option.value ? "planning-option--active" : undefined}
+                  className={
+                    !plannedDate && !hasPlannedRange && preset === option.value
+                      ? "planning-option--active"
+                      : undefined
+                  }
                   type="button"
                   key={option.value}
-                  aria-pressed={preset === option.value}
+                  aria-pressed={!plannedDate && !hasPlannedRange && preset === option.value}
                   onClick={() => changePreset(option.value)}
                 >
                   {option.label}
                 </button>
               ))}
             </div>
+          </div>
+
+          <div className="planning-filter planning-filter--date">
+            <DatePickerPopover
+              mode="single"
+              label="Конкретная дата"
+              buttonLabel={plannedDate ? formatCompactDate(plannedDate) : "Выбрать"}
+              value={plannedDate}
+              onChange={changePlannedDate}
+            />
+          </div>
+          <div className="planning-filter planning-filter--date">
+            <DatePickerPopover
+              mode="range"
+              label="Диапазон дат"
+              buttonLabel={
+                plannedRange.from && plannedRange.to
+                  ? `${formatCompactDate(plannedRange.from)}–${formatCompactDate(plannedRange.to)}`
+                  : plannedRange.from
+                    ? `От ${formatCompactDate(plannedRange.from)}`
+                    : "Выбрать"
+              }
+              value={plannedRange}
+              onChange={changePlannedRange}
+            />
           </div>
 
           <div className="planning-filter planning-filter--statuses">
@@ -471,11 +561,19 @@ export function PlanningPage() {
         {hasActiveFilters ? (
           <div className="planning-active-filter" role="status">
             <span>
-              {deadlinePreset
+              {plannedDate
+                ? `Дата: ${formatCompactDate(plannedDate)}`
+                : plannedRange.from && plannedRange.to
+                  ? `Период: ${formatCompactDate(plannedRange.from)}–${formatCompactDate(plannedRange.to)}`
+                  : plannedRange.from
+                    ? `Период: от ${formatCompactDate(plannedRange.from)}`
+                    : plannedRange.to
+                      ? `Период: до ${formatCompactDate(plannedRange.to)}`
+                      : deadlinePreset
                 ? `Дедлайн: ${deadlinePresetLabels[deadlinePreset]}`
                 : deadlineDate
-                ? `Дедлайн: ${searchParams.get("deadline_date") === "today" ? "сегодня" : formatShortDate(deadlineDate)}`
-                : "Применены фильтры"}
+                  ? `Дедлайн: ${searchParams.get("deadline_date") === "today" ? "сегодня" : formatShortDate(deadlineDate)}`
+                  : "Применены фильтры"}
             </span>
             <button type="button" onClick={resetFilters}>
               Сбросить фильтры

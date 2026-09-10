@@ -5,6 +5,7 @@ import { AuthLayout } from "./layouts/auth-layout";
 import { ProtectedLayout } from "./layouts/protected-layout";
 import { PublicOnlyLayout } from "./layouts/public-only-layout";
 import { ArchivePage } from "../pages/archive-page";
+import { CalendarPage } from "../pages/calendar-page";
 import { LoginPage } from "../pages/login-page";
 import { PlanningPage } from "../pages/planning-page";
 import { RegisterPage } from "../pages/register-page";
@@ -25,6 +26,7 @@ export function AppRoutes() {
           <Route index element={<Navigate to="/app/today" replace />} />
           <Route path="today" element={<TodayPage />} />
           <Route path="planning" element={<PlanningPage />} />
+          <Route path="calendar" element={<CalendarPage />} />
           <Route path="archive" element={<ArchivePage />} />
         </Route>
       </Route>

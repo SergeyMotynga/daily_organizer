@@ -23,7 +23,7 @@ from sqlalchemy.sql.elements import ColumnElement
 
 from backend.domain.tasks import TaskRecurrenceTypeCode, TaskSort, TaskStatusCode
 from backend.dto.common import PaginationParams
-from backend.dto.tasks import TaskCreateData, TaskListFilters
+from backend.dto.tasks import CalendarRecurrenceCompletion, TaskCreateData, TaskListFilters
 from backend.models.task import Task, TaskRecurrenceCompletion, TaskRecurrenceType, TaskStatus
 
 
@@ -182,6 +182,61 @@ class TaskRepository:
         )
         result = await self.db.execute(statement)
         return list(result.scalars().all())
+
+    async def list_calendar_candidates_for_user(
+        self,
+        *,
+        user_id: UUID,
+        date_from: date,
+        date_to: date,
+    ) -> list[Task]:
+        """Возвращает задачи, которые могут попасть в календарный диапазон."""
+        regular_planned_in_range = and_(
+            Task.recurrence_type_code == TaskRecurrenceTypeCode.none.value,
+            Task.planned_date.between(date_from, date_to),
+        )
+        deadline_in_range = Task.deadline_date.between(date_from, date_to)
+        recurrence_intersects_range = and_(
+            Task.recurrence_type_code != TaskRecurrenceTypeCode.none.value,
+            Task.recurrence_start_date.is_not(None),
+            Task.recurrence_start_date <= date_to,
+            or_(Task.recurrence_end_date.is_(None), Task.recurrence_end_date >= date_from),
+        )
+        statement = (
+            select(Task)
+            .where(
+                Task.user_id == user_id,
+                Task.archived_at.is_(None),
+                or_(regular_planned_in_range, deadline_in_range, recurrence_intersects_range),
+            )
+            .order_by(asc(Task.created_at), asc(Task.id))
+        )
+        result = await self.db.execute(statement)
+        return list(result.scalars().all())
+
+    async def list_recurrence_completions_for_range(
+        self,
+        *,
+        task_ids: list[UUID],
+        date_from: date,
+        date_to: date,
+    ) -> list[CalendarRecurrenceCompletion]:
+        """Возвращает выполнения повторений для задач и диапазона."""
+        if not task_ids:
+            return []
+
+        statement = select(
+            TaskRecurrenceCompletion.task_id,
+            TaskRecurrenceCompletion.occurrence_date,
+        ).where(
+            TaskRecurrenceCompletion.task_id.in_(task_ids),
+            TaskRecurrenceCompletion.occurrence_date.between(date_from, date_to),
+        )
+        rows = (await self.db.execute(statement)).all()
+        return [
+            CalendarRecurrenceCompletion(task_id=row.task_id, occurrence_date=row.occurrence_date)
+            for row in rows
+        ]
 
     async def list_completed_recurrence_task_ids(
         self,

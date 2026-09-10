@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import type { TaskListParams, UpdateTaskPayload } from "../../entities/task/types";
+import { calendarQueryKeys } from "../calendar/queries";
 import { todayQueryKeys } from "../today/queries";
 import {
   completeTaskRecurrence,
@@ -62,6 +63,7 @@ export function useCreateTaskMutation() {
     onSuccess: async () => {
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: taskQueryKeys.lists }),
+        queryClient.invalidateQueries({ queryKey: calendarQueryKeys.all }),
         queryClient.invalidateQueries({ queryKey: todayQueryKeys.all })
       ]);
     }
@@ -78,6 +80,7 @@ export function useUpdateTaskMutation() {
       queryClient.setQueryData(taskQueryKeys.detail(task.id), task);
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: taskQueryKeys.lists }),
+        queryClient.invalidateQueries({ queryKey: calendarQueryKeys.all }),
         queryClient.invalidateQueries({ queryKey: todayQueryKeys.all })
       ]);
     }
@@ -93,6 +96,7 @@ export function useDeleteTaskMutation() {
       queryClient.removeQueries({ queryKey: taskQueryKeys.detail(taskId) });
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: taskQueryKeys.lists }),
+        queryClient.invalidateQueries({ queryKey: calendarQueryKeys.all }),
         queryClient.invalidateQueries({ queryKey: todayQueryKeys.all })
       ]);
     }
@@ -118,6 +122,7 @@ export function useRecurrenceCompletionMutation() {
     onSuccess: async () => {
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: taskQueryKeys.lists }),
+        queryClient.invalidateQueries({ queryKey: calendarQueryKeys.all }),
         queryClient.invalidateQueries({ queryKey: todayQueryKeys.all })
       ]);
     }

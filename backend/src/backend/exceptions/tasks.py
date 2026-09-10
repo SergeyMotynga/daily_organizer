@@ -31,3 +31,7 @@ class InvalidTaskTitleError(TaskError):
 
 class InvalidTimezoneError(TaskError):
     """Timezone не является валидным IANA timezone name."""
+
+
+class InvalidCalendarRangeError(TaskError):
+    """Диапазон календаря имеет неверный порядок или превышает лимит."""

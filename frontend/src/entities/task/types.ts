@@ -54,6 +54,9 @@ export type TaskListParams = {
   preset: TaskListPreset;
   statuses: TaskStatusCode[];
   archived?: boolean;
+  planned_date?: string;
+  planned_from?: string;
+  planned_to?: string;
   deadline_date?: string;
   deadline_preset?: TaskDeadlinePreset;
   timezone?: string;
@@ -88,4 +91,34 @@ export type CreateTaskPayload = {
 
 export type UpdateTaskPayload = Partial<CreateTaskPayload> & {
   archived?: boolean;
+};
+
+export type CalendarTask = {
+  id: string;
+  title: string;
+  description: string | null;
+  planned_date: string | null;
+  planned_time: string | null;
+  deadline_date: string | null;
+  deadline_time: string | null;
+  recurrence_type_code: TaskRecurrenceTypeCode;
+  recurrence_interval: number;
+  recurrence_start_date: string | null;
+  recurrence_end_date: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+export type CalendarTaskItem = {
+  task: CalendarTask;
+  status: TaskStatusCode;
+  occurrence_date: string | null;
+};
+
+export type CalendarViewResponse = {
+  date_from: string;
+  date_to: string;
+  planned: CalendarTaskItem[];
+  deadlines: CalendarTaskItem[];
+  recurrences: CalendarTaskItem[];
 };

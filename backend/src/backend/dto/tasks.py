@@ -2,6 +2,8 @@
 
 from dataclasses import dataclass
 from datetime import date, time
+from typing import TYPE_CHECKING
+from uuid import UUID
 
 from backend.domain.tasks import (
     TaskDeadlinePreset,
@@ -10,6 +12,9 @@ from backend.domain.tasks import (
     TaskSort,
     TaskStatusCode,
 )
+
+if TYPE_CHECKING:
+    from backend.models.task import Task
 
 
 @dataclass(frozen=True)
@@ -60,6 +65,8 @@ class TaskListQuery:
     statuses: list[TaskStatusCode] | None = None
     archived: bool = False
     planned_date: date | None = None
+    planned_from: date | None = None
+    planned_to: date | None = None
     deadline_date: date | None = None
     deadline_preset: TaskDeadlinePreset | None = None
     timezone: str = "UTC"
@@ -84,3 +91,31 @@ class TaskListFilters:
     recurrence_date: date | None = None
     q: str | None = None
     sort: TaskSort = TaskSort.created_at_desc
+
+
+@dataclass(frozen=True)
+class CalendarRecurrenceCompletion:
+    """Выполнение повторяющейся задачи внутри календарного диапазона."""
+
+    task_id: UUID
+    occurrence_date: date
+
+
+@dataclass(frozen=True)
+class CalendarTaskItem:
+    """Задача в контексте одного календарного дня."""
+
+    task: "Task"
+    status: TaskStatusCode
+    occurrence_date: date | None = None
+
+
+@dataclass(frozen=True)
+class CalendarViewResult:
+    """Собранные коллекции календарного диапазона."""
+
+    date_from: date
+    date_to: date
+    planned: list[CalendarTaskItem]
+    deadlines: list[CalendarTaskItem]
+    recurrences: list[CalendarTaskItem]

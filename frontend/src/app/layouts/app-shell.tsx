@@ -1,4 +1,4 @@
-import { Archive, CalendarDays, CalendarRange, Check, LogOut } from "lucide-react";
+import { Archive, Calendar, CalendarDays, CalendarRange, Check, LogOut } from "lucide-react";
 import { NavLink, Outlet, useNavigate } from "react-router";
 
 import { useCurrentUserQuery, useLogoutMutation } from "../../features/auth/session";
@@ -6,6 +6,7 @@ import { useCurrentUserQuery, useLogoutMutation } from "../../features/auth/sess
 const navigationItems = [
   { to: "/app/today", label: "Сегодня", icon: CalendarDays },
   { to: "/app/planning", label: "Планирование", icon: CalendarRange },
+  { to: "/app/calendar", label: "Календарь", icon: Calendar },
   { to: "/app/archive", label: "Архив", icon: Archive }
 ];
 

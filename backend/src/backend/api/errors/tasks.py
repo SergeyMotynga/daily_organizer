@@ -2,6 +2,7 @@
 
 from backend.api.errors.responses import ErrorSpec
 from backend.exceptions.tasks import (
+    InvalidCalendarRangeError,
     InvalidTaskRecurrenceCompletionError,
     InvalidTaskScheduleError,
     InvalidTaskTitleError,
@@ -47,5 +48,10 @@ TASK_ERROR_SPECS: dict[type[TaskError], ErrorSpec] = {
         status_code=400,
         code="INVALID_TIMEZONE",
         message="Некорректная timezone",
+    ),
+    InvalidCalendarRangeError: ErrorSpec(
+        status_code=422,
+        code="INVALID_CALENDAR_RANGE",
+        message="Диапазон календаря должен содержать от 1 до 42 дней",
     ),
 }

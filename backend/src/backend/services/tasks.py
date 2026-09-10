@@ -15,7 +15,14 @@ from backend.domain.tasks import (
     TaskStatusCode,
 )
 from backend.dto.common import PaginationParams
-from backend.dto.tasks import TaskCreateData, TaskListFilters, TaskListQuery, TaskUpdateData
+from backend.dto.tasks import (
+    CalendarTaskItem,
+    CalendarViewResult,
+    TaskCreateData,
+    TaskListFilters,
+    TaskListQuery,
+    TaskUpdateData,
+)
 from backend.exceptions.tasks import (
     InvalidTaskRecurrenceCompletionError,
     InvalidTaskScheduleError,
@@ -27,7 +34,7 @@ from backend.exceptions.tasks import (
 from backend.models.task import Task, TaskRecurrenceCompletion, TaskRecurrenceType, TaskStatus
 from backend.models.user import User
 from backend.repositories.tasks import TaskRepository
-from backend.validators.tasks import validate_task_title
+from backend.validators.tasks import validate_calendar_range, validate_task_title
 
 
 @dataclass(frozen=True)
@@ -244,6 +251,101 @@ class TaskService:
 
         return TodayViewResult(date=today, summary=summary, blocks=blocks)
 
+    async def get_calendar_view(
+        self,
+        *,
+        user: User,
+        date_from: date,
+        date_to: date,
+    ) -> CalendarViewResult:
+        """Собирает задачи, дедлайны и повторения календарного диапазона."""
+        validate_calendar_range(date_from, date_to)
+        tasks = await self.tasks.list_calendar_candidates_for_user(
+            user_id=user.id,
+            date_from=date_from,
+            date_to=date_to,
+        )
+        recurring_task_ids = [
+            task.id
+            for task in tasks
+            if task.recurrence_type_code != TaskRecurrenceTypeCode.none.value
+        ]
+        completion_rows = await self.tasks.list_recurrence_completions_for_range(
+            task_ids=recurring_task_ids,
+            date_from=date_from,
+            date_to=date_to,
+        )
+        completed_occurrences = {
+            (completion.task_id, completion.occurrence_date) for completion in completion_rows
+        }
+
+        planned: list[CalendarTaskItem] = []
+        deadlines: list[CalendarTaskItem] = []
+        recurrences: list[CalendarTaskItem] = []
+        for task in tasks:
+            status = TaskStatusCode(task.status_code)
+            is_recurring = task.recurrence_type_code != TaskRecurrenceTypeCode.none.value
+            if (
+                not is_recurring
+                and task.planned_date is not None
+                and date_from <= task.planned_date <= date_to
+            ):
+                planned.append(CalendarTaskItem(task=task, status=status))
+            if task.deadline_date is not None and date_from <= task.deadline_date <= date_to:
+                deadlines.append(CalendarTaskItem(task=task, status=status))
+            if not is_recurring:
+                continue
+
+            occurrence_date = max(date_from, task.recurrence_start_date or date_from)
+            recurrence_end = min(date_to, task.recurrence_end_date or date_to)
+            while occurrence_date <= recurrence_end:
+                if self._is_recurrence_due(task, occurrence_date):
+                    occurrence_status = (
+                        TaskStatusCode.done
+                        if (task.id, occurrence_date) in completed_occurrences
+                        else TaskStatusCode.todo
+                    )
+                    recurrences.append(
+                        CalendarTaskItem(
+                            task=task,
+                            status=occurrence_status,
+                            occurrence_date=occurrence_date,
+                        )
+                    )
+                occurrence_date += timedelta(days=1)
+
+        planned.sort(
+            key=lambda item: (
+                item.task.planned_date or date.max,
+                item.task.planned_time or time.max,
+                item.task.created_at,
+                str(item.task.id),
+            )
+        )
+        deadlines.sort(
+            key=lambda item: (
+                item.task.deadline_date or date.max,
+                item.task.deadline_time or time.max,
+                item.task.created_at,
+                str(item.task.id),
+            )
+        )
+        recurrences.sort(
+            key=lambda item: (
+                item.occurrence_date or date.max,
+                item.task.planned_time or time.max,
+                item.task.created_at,
+                str(item.task.id),
+            )
+        )
+        return CalendarViewResult(
+            date_from=date_from,
+            date_to=date_to,
+            planned=planned,
+            deadlines=deadlines,
+            recurrences=recurrences,
+        )
+
     async def update_task(self, *, user: User, task_id: UUID, data: TaskUpdateData) -> Task:
         """Частично изменяет задачу пользователя."""
         task = await self.get_task(user=user, task_id=task_id)
@@ -448,6 +550,11 @@ class TaskService:
             planned_date_to = query.planned_date
             planned_date_is_null = False
             recurrence_date = query.planned_date
+        elif query.planned_from is not None or query.planned_to is not None:
+            planned_date_from = query.planned_from
+            planned_date_to = query.planned_to
+            planned_date_is_null = False
+            recurrence_date = None
 
         if query.deadline_preset is not None and query.deadline_date is None:
             statuses = [status for status in statuses if status == TaskStatusCode.todo]

@@ -34,6 +34,18 @@ export function getTasks(params: TaskListParams): Promise<TaskListResponse> {
     searchParams.set("archived", "true");
   }
 
+  if (params.planned_date) {
+    searchParams.set("planned_date", params.planned_date);
+  }
+
+  if (params.planned_from) {
+    searchParams.set("planned_from", params.planned_from);
+  }
+
+  if (params.planned_to) {
+    searchParams.set("planned_to", params.planned_to);
+  }
+
   if (params.deadline_date) {
     searchParams.set("deadline_date", params.deadline_date);
   }

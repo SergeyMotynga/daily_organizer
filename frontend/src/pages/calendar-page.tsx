@@ -78,12 +78,26 @@ function formatMonthLabel(date: Date): string {
   return `Месяц: ${value}`;
 }
 
+function formatDateJumpLabel(value: string): string {
+  const date = parseDateValue(value);
+  if (!date) {
+    return value;
+  }
+  return new Intl.DateTimeFormat("ru-RU", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric"
+  }).format(date);
+}
+
 function formatSelectedDate(date: Date): string {
   const value = new Intl.DateTimeFormat("ru-RU", {
-    weekday: "long",
+    weekday: "short",
     day: "numeric",
     month: "long"
-  }).format(date);
+  })
+    .format(date)
+    .replace(".", "");
   return value.charAt(0).toUpperCase() + value.slice(1);
 }
 
@@ -120,8 +134,52 @@ function CalendarItemChip({ item, onOpen }: { item: DatedCalendarItem; onOpen: (
       ) : time ? (
         <Clock3 size={12} aria-hidden="true" />
       ) : null}
-      {time ? <span className="calendar-item__time">{time}</span> : null}
-      <span>{item.task.title}</span>
+      <span className="calendar-item__content">
+        {item.kind === "deadline" ? (
+          <span className="calendar-item__eyebrow">Дедлайн:</span>
+        ) : null}
+        <span className="calendar-item__main">
+          {time ? <span className="calendar-item__time">{time}</span> : null}
+          <span className="calendar-item__title">{item.task.title}</span>
+        </span>
+        {item.kind === "recurrence" ? (
+          <span className="calendar-item__recurrence-label">
+            {getRecurrenceLabel(
+              item.task.recurrence_type_code,
+              item.task.recurrence_interval
+            )}
+          </span>
+        ) : null}
+      </span>
+    </button>
+  );
+}
+
+function CalendarSideItem({ item, onOpen }: { item: DatedCalendarItem; onOpen: () => void }) {
+  const time = getItemTime(item);
+  const recurrenceLabel =
+    item.kind === "recurrence"
+      ? getRecurrenceLabel(item.task.recurrence_type_code, item.task.recurrence_interval)
+      : null;
+
+  return (
+    <button
+      className={`calendar-side-item calendar-side-item--${item.kind}`}
+      type="button"
+      onClick={onOpen}
+    >
+      {item.kind === "planned" && time ? (
+        <span className="calendar-side-item__time">{time}</span>
+      ) : item.kind === "deadline" ? (
+        <Clock3 size={17} aria-hidden="true" />
+      ) : item.kind === "recurrence" ? (
+        <Repeat2 size={17} aria-hidden="true" />
+      ) : null}
+      <span className="calendar-side-item__copy">
+        <span>{item.task.title}</span>
+        {item.kind === "deadline" && time ? ` — ${time}` : null}
+        {recurrenceLabel ? <small> · {recurrenceLabel}</small> : null}
+      </span>
     </button>
   );
 }
@@ -272,7 +330,7 @@ export function CalendarPage() {
             mode="single"
             className="calendar-toolbar__picker"
             label="Перейти к дате"
-            buttonLabel={dateValue}
+            buttonLabel={formatDateJumpLabel(dateValue)}
             value={dateValue}
             onChange={(value) => updateCalendar(view, value)}
           />
@@ -310,6 +368,7 @@ export function CalendarPage() {
                       (item) => item.kind !== "deadline" && Boolean(getItemTime(item))
                     );
                     const deadlines = items.filter((item) => item.kind === "deadline");
+                    const scheduled = [...timed, ...deadlines];
                     return (
                       <article
                         key={dayValue}
@@ -334,13 +393,16 @@ export function CalendarPage() {
                           ) : null}
                         </div>
                         <div className="calendar-timed-items">
-                          {[...timed, ...deadlines].map((item) => (
+                          {scheduled.slice(0, 4).map((item) => (
                             <CalendarItemChip
                               key={`${item.kind}-${item.task.id}-${dayValue}`}
                               item={item}
                               onOpen={() => setSelectedTaskId(item.task.id)}
                             />
                           ))}
+                          {scheduled.length > 4 ? (
+                            <CalendarMoreLink date={dayValue} count={scheduled.length - 4} />
+                          ) : null}
                         </div>
                       </article>
                     );
@@ -391,34 +453,81 @@ export function CalendarPage() {
                 <h2>{formatSelectedDate(selectedDate)}</h2>
               </header>
               <div className="calendar-selected-day__groups">
-                {[
-                  ["По времени", selectedTimed],
-                  ["Без времени", selectedUntimed],
-                  ["Дедлайны", selectedDeadlines],
-                  ["Повторения", selectedRecurrences]
-                ].map(([label, items]) => {
-                  const groupItems = items as DatedCalendarItem[];
-                  return groupItems.length ? (
-                    <section className="calendar-day-group" key={label as string}>
-                      <h3>{label as string}</h3>
-                      {groupItems.map((item) => (
-                        <CalendarItemChip
-                          key={`${item.kind}-${item.task.id}-${dateValue}`}
-                          item={item}
-                          onOpen={() => setSelectedTaskId(item.task.id)}
-                        />
-                      ))}
-                    </section>
-                  ) : null;
-                })}
+                {selectedTimed.length ? (
+                  <section className="calendar-day-group">
+                    <h3>По времени</h3>
+                    {selectedTimed.map((item) => (
+                      <CalendarSideItem
+                        key={`${item.kind}-${item.task.id}-${dateValue}`}
+                        item={item}
+                        onOpen={() => setSelectedTaskId(item.task.id)}
+                      />
+                    ))}
+                  </section>
+                ) : null}
+
+                {selectedUntimed.length ? (
+                  <section className="calendar-day-group">
+                    <h3>Без времени</h3>
+                    {selectedUntimed.slice(0, 2).map((item) => (
+                      <CalendarSideItem
+                        key={`${item.kind}-${item.task.id}-${dateValue}`}
+                        item={item}
+                        onOpen={() => setSelectedTaskId(item.task.id)}
+                      />
+                    ))}
+                    {selectedUntimed.length > 2 ? (
+                      <Link
+                        className="calendar-side-more"
+                        to={`/app/planning?planned_date=${dateValue}`}
+                      >
+                        +{selectedUntimed.length - 2} ещё
+                      </Link>
+                    ) : null}
+                  </section>
+                ) : null}
+
+                {selectedDeadlines.length ? (
+                  <section className="calendar-day-group calendar-day-group--deadlines">
+                    <h3>
+                      Дедлайны
+                      <AlertCircle size={18} aria-hidden="true" />
+                    </h3>
+                    {selectedDeadlines.slice(0, 3).map((item) => (
+                      <CalendarSideItem
+                        key={`${item.kind}-${item.task.id}-${dateValue}`}
+                        item={item}
+                        onOpen={() => setSelectedTaskId(item.task.id)}
+                      />
+                    ))}
+                    {selectedDeadlines.length > 3 ? (
+                      <Link
+                        className="calendar-side-more"
+                        to={`/app/planning?deadline_date=${dateValue}`}
+                      >
+                        +{selectedDeadlines.length - 3} ещё
+                      </Link>
+                    ) : null}
+                  </section>
+                ) : null}
+
+                {selectedRecurrences.length ? (
+                  <section className="calendar-day-group calendar-day-group--recurrences">
+                    <h3>Повторения</h3>
+                    {selectedRecurrences.map((item) => (
+                      <CalendarSideItem
+                        key={`${item.kind}-${item.task.id}-${dateValue}`}
+                        item={item}
+                        onOpen={() => setSelectedTaskId(item.task.id)}
+                      />
+                    ))}
+                  </section>
+                ) : null}
                 {selectedItems.length === 0 ? (
                   <p className="calendar-selected-day__empty">На этот день задач нет.</p>
                 ) : null}
               </div>
               <Link to={`/app/planning?planned_date=${dateValue}`}>Показать в планировании</Link>
-              {selectedDeadlines.length ? (
-                <Link to={`/app/planning?deadline_date=${dateValue}`}>Показать дедлайны дня</Link>
-              ) : null}
             </aside>
           </div>
         )}

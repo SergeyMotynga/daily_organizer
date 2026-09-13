@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { type ReactNode, useState } from "react";
 import type { LucideIcon } from "lucide-react";
 import {
   AlertCircle,
@@ -51,6 +51,7 @@ type TaskGroupProps = {
   onOpenTask: (taskId: string) => void;
   onStatusChange: (task: Task, status: TaskStatusCode) => void;
   onArchive: (taskId: string) => void;
+  actions?: ReactNode;
 };
 
 function formatPageDate(date: string): string {
@@ -185,13 +186,17 @@ function TaskGroup({
   pendingTaskId,
   onOpenTask,
   onStatusChange,
-  onArchive
+  onArchive,
+  actions
 }: TaskGroupProps) {
   return (
     <section className={`today-group today-group--${tone}`}>
       <div className="today-group__header">
-        <h2>{title}</h2>
-        <span>{tasks.length}</span>
+        <div className="today-group__heading">
+          <h2>{title}</h2>
+          <span>{tasks.length}</span>
+        </div>
+        {actions}
       </div>
       {tasks.length > 0 ? (
         <ul className="today-task-list">
@@ -400,22 +405,6 @@ function TodayContent({
       ) : (
         <div className="today-board">
           <div className="today-board__main">
-            <div className="today-board__toolbar">
-              <span>Задачи</span>
-              <label>
-                <span>Сортировка</span>
-                <select
-                  value={sort}
-                  onChange={(event) => onSortChange(event.target.value as TodaySort)}
-                >
-                  {todaySortOptions.map((option) => (
-                    <option value={option.value} key={option.value}>
-                      {option.label}
-                    </option>
-                  ))}
-                </select>
-              </label>
-            </div>
             <TaskGroup
               title="План на сегодня"
               tasks={plannedToday}
@@ -425,6 +414,21 @@ function TodayContent({
               onOpenTask={onOpenTask}
               onStatusChange={onStatusChange}
               onArchive={onArchive}
+              actions={
+                <label className="today-group__sort">
+                  <span>Сортировка</span>
+                  <select
+                    value={sort}
+                    onChange={(event) => onSortChange(event.target.value as TodaySort)}
+                  >
+                    {todaySortOptions.map((option) => (
+                      <option value={option.value} key={option.value}>
+                        {option.label}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              }
             />
             <TaskGroup
               title="Выполнено сегодня"

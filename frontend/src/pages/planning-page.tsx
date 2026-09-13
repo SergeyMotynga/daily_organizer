@@ -57,6 +57,37 @@ const deadlinePresetLabels: Record<TaskDeadlinePreset, string> = {
   soon: "в ближайшие 3 дня"
 };
 
+function formatPlanningDate(value: string, withYear = true): string {
+  const [year, month, day] = value.split("-");
+
+  if (!year || !month || !day) {
+    return value;
+  }
+
+  return withYear ? `${day}.${month}.${year}` : `${day}.${month}`;
+}
+
+function formatPlanningRange(value: DateRangeValue): string {
+  if (value.from && value.to) {
+    const fromYear = value.from.slice(0, 4);
+    const toYear = value.to.slice(0, 4);
+
+    return fromYear === toYear
+      ? `${formatPlanningDate(value.from, false)}–${formatPlanningDate(value.to)}`
+      : `${formatPlanningDate(value.from)}–${formatPlanningDate(value.to)}`;
+  }
+
+  if (value.from) {
+    return `от ${formatPlanningDate(value.from)}`;
+  }
+
+  if (value.to) {
+    return `до ${formatPlanningDate(value.to)}`;
+  }
+
+  return "Период";
+}
+
 function getPreset(searchParams: URLSearchParams): TaskListPreset {
   const preset = searchParams.get("preset");
   return presets.some((option) => option.value === preset) ? (preset as TaskListPreset) : "all";
@@ -454,48 +485,46 @@ export function PlanningPage() {
         <div className="planning-toolbar">
           <div className="planning-filter planning-filter--presets">
             <span className="planning-filter__label">Быстрые фильтры</span>
-            <div className="planning-preset-options">
-              {presets.map((option) => (
-                <button
-                  className={
-                    !plannedDate && !hasPlannedRange && preset === option.value
-                      ? "planning-option--active"
-                      : undefined
-                  }
-                  type="button"
-                  key={option.value}
-                  aria-pressed={!plannedDate && !hasPlannedRange && preset === option.value}
-                  onClick={() => changePreset(option.value)}
-                >
-                  {option.label}
-                </button>
-              ))}
-            </div>
-          </div>
+            <div className="planning-filter__control-row">
+              <div className="planning-preset-options">
+                {presets.map((option) => (
+                  <button
+                    className={
+                      !plannedDate && !hasPlannedRange && preset === option.value
+                        ? "planning-option--active"
+                        : undefined
+                    }
+                    type="button"
+                    key={option.value}
+                    aria-pressed={!plannedDate && !hasPlannedRange && preset === option.value}
+                    onClick={() => changePreset(option.value)}
+                  >
+                    {option.label}
+                  </button>
+                ))}
+              </div>
 
-          <div className="planning-filter planning-filter--date">
-            <DatePickerPopover
-              mode="single"
-              label="Конкретная дата"
-              buttonLabel={plannedDate ? formatCompactDate(plannedDate) : "Выбрать"}
-              value={plannedDate}
-              onChange={changePlannedDate}
-            />
-          </div>
-          <div className="planning-filter planning-filter--date">
-            <DatePickerPopover
-              mode="range"
-              label="Диапазон дат"
-              buttonLabel={
-                plannedRange.from && plannedRange.to
-                  ? `${formatCompactDate(plannedRange.from)}–${formatCompactDate(plannedRange.to)}`
-                  : plannedRange.from
-                    ? `От ${formatCompactDate(plannedRange.from)}`
-                    : "Выбрать"
-              }
-              value={plannedRange}
-              onChange={changePlannedRange}
-            />
+              <div className="planning-date-options">
+                <DatePickerPopover
+                  mode="single"
+                  label="Конкретная дата"
+                  buttonLabel={
+                    plannedDate ? `Дата: ${formatPlanningDate(plannedDate)}` : "Дата"
+                  }
+                  value={plannedDate}
+                  onChange={changePlannedDate}
+                />
+                <DatePickerPopover
+                  mode="range"
+                  label="Диапазон дат"
+                  buttonLabel={
+                    hasPlannedRange ? `Период: ${formatPlanningRange(plannedRange)}` : "Период"
+                  }
+                  value={plannedRange}
+                  onChange={changePlannedRange}
+                />
+              </div>
+            </div>
           </div>
 
           <div className="planning-filter planning-filter--statuses">

@@ -93,7 +93,6 @@ export function DatePickerPopover(props: DatePickerPopoverProps) {
               weekStartsOn={1}
               captionLayout="dropdown"
               navLayout="after"
-              showWeekNumber
               startMonth={new Date(2000, 0)}
               endMonth={new Date(2100, 11)}
               defaultMonth={defaultMonth}
@@ -112,7 +111,6 @@ export function DatePickerPopover(props: DatePickerPopoverProps) {
               weekStartsOn={1}
               captionLayout="dropdown"
               navLayout="after"
-              showWeekNumber
               startMonth={new Date(2000, 0)}
               endMonth={new Date(2100, 11)}
               resetOnSelect

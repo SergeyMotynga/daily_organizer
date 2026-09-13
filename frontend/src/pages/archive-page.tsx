@@ -5,11 +5,13 @@ import {
   CalendarDays,
   ChevronLeft,
   ChevronRight,
+  Plus,
   RotateCcw,
   Search
 } from "lucide-react";
 
 import type { Task, TaskListParams, TaskSort } from "../entities/task/types";
+import { CreateTaskDrawer } from "../features/tasks/create-task-drawer";
 import { TaskDetailsDrawer } from "../features/tasks/task-details-drawer";
 import {
   useDeleteTaskMutation,
@@ -144,6 +146,7 @@ export function ArchivePage() {
   const [limit, setLimit] = useState(20);
   const [offset, setOffset] = useState(0);
   const [deleteConfirmTaskId, setDeleteConfirmTaskId] = useState<string | null>(null);
+  const [isCreateTaskOpen, setIsCreateTaskOpen] = useState(false);
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
   const restoreTaskMutation = useUpdateTaskMutation();
   const deleteTaskMutation = useDeleteTaskMutation();
@@ -208,8 +211,16 @@ export function ArchivePage() {
         <header className="archive-page__header">
           <div>
             <h1>Архив</h1>
-            <p>Задачи, скрытые из обычных списков</p>
+            <p>Завершённые и скрытые задачи</p>
           </div>
+          <button
+            className="archive-page__new-task"
+            type="button"
+            onClick={() => setIsCreateTaskOpen(true)}
+          >
+            <Plus size={18} aria-hidden="true" />
+            Новая задача
+          </button>
         </header>
 
         <div className="archive-toolbar">
@@ -339,6 +350,9 @@ export function ArchivePage() {
         ) : null}
       {selectedTaskId ? (
         <TaskDetailsDrawer taskId={selectedTaskId} onClose={() => setSelectedTaskId(null)} />
+      ) : null}
+      {isCreateTaskOpen ? (
+        <CreateTaskDrawer onClose={() => setIsCreateTaskOpen(false)} />
       ) : null}
     </section>
   );

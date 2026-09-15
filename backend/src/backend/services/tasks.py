@@ -634,7 +634,7 @@ class TaskService:
                 done_today.append(item)
                 continue
 
-            if is_recurring or task.planned_date == today:
+            if is_recurring or task.planned_date == today or task.deadline_date == today:
                 planned_today.append(item)
 
             is_overdue_today = (

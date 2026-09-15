@@ -1,0 +1,18 @@
+.web-threads-container {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+
+.app-background {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background: #f8faff;
+}
+
+.app-background .web-threads-container { opacity: .24; }
+
+#root { isolation: isolate; }

@@ -46,7 +46,7 @@ function validateRegisterForm(
   }
 
   if (!login.trim()) {
-    errors.login = "Введите login.";
+    errors.login = "Введите логин.";
   }
 
   if (!password) {
@@ -103,7 +103,6 @@ export function RegisterPage() {
         <h1 id="register-title">Аккаунт создан</h1>
         <p>{createdUser.name}, регистрация завершена. Теперь войдите в аккаунт, чтобы начать работу.</p>
         <span className="primary-button-shell">
-          <span className="primary-button-shell__glow" aria-hidden="true" />
           <Link className="primary-button" to="/login">
             Перейти ко входу
           </Link>

@@ -2,9 +2,6 @@ import { useEffect, useState } from "react";
 import {
   AlertCircle,
   CalendarDays,
-  Check,
-  ChevronLeft,
-  ChevronRight,
   Clock3,
   MoreVertical,
   Plus,
@@ -14,6 +11,9 @@ import {
   Settings2
 } from "lucide-react";
 import { useSearchParams } from "react-router";
+import { Checkbox } from "../shared/ui/checkbox";
+import { InputGroup, InputGroupAddon, InputGroupInput } from "../shared/ui/input-group";
+import { SelectCombobox } from "../shared/ui/select-combobox";
 
 import type {
   Task,
@@ -35,6 +35,7 @@ import { getRecurrenceLabel, isTaskRecurring } from "../features/tasks/recurrenc
 import type { DateRangeValue } from "../shared/date-values";
 import { formatCompactDate } from "../shared/date-values";
 import { DatePickerPopover } from "../shared/ui/date-picker-popover";
+import { Pagination } from "../shared/ui/pagination";
 
 const presets: { value: TaskListPreset; label: string }[] = [
   { value: "today", label: "Сегодня" },
@@ -244,22 +245,20 @@ function PlanningTaskRow({
   return (
     <tr className={`planning-task-row planning-task-row--${deadlineTone}`}>
       <td className="planning-task-cell planning-task-cell--title">
-        <button
-          type="button"
-          className={`planning-task-check planning-task-check--${effectiveStatus}`}
+        <Checkbox
+          className="planning-task-check"
+          isSelected={isDone}
           aria-label={isDone ? `Вернуть в активные: ${task.title}` : `Выполнить: ${task.title}`}
           title={
             isRecurring && !hasOccurrence
-              ? "Для выбранного периода нет occurrence"
+              ? "В выбранном периоде задача не повторяется"
               : isDone
                 ? "Снять выполнение сегодня"
                 : "Отметить выполненной"
           }
-          disabled={isPending || (isRecurring && !hasOccurrence)}
-          onClick={() => onStatusChange(isDone ? "todo" : "done")}
-        >
-          {isDone ? <Check size={11} strokeWidth={3} aria-hidden="true" /> : null}
-        </button>
+          isDisabled={isPending || (isRecurring && !hasOccurrence)}
+          onChange={(selected) => onStatusChange(selected ? "done" : "todo")}
+        />
         <button type="button" title={task.title} onClick={onOpen}>
           {task.title}
         </button>
@@ -274,9 +273,9 @@ function PlanningTaskRow({
         <span className={`planning-status planning-status--${effectiveStatus}`}>{statusTitle}</span>
       </td>
       <td>
-        <span className={planningDate ? "planning-date" : "planning-date planning-date--muted"}>
+        <span className={planningDate === getLocalDate() ? "planning-date planning-date--today" : planningDate ? "planning-date" : "planning-date planning-date--muted"}>
           <CalendarDays size={15} aria-hidden="true" />
-          {getPlannedDateLabel(planningDate)} · {task.planned_time ?? "—"}
+          {getPlannedDateLabel(planningDate)}{task.planned_time ? `, ${task.planned_time.slice(0, 5)}` : ""}
         </span>
       </td>
       <td>
@@ -353,8 +352,6 @@ export function PlanningPage() {
   };
   const tasksQuery = useTasksQuery(queryParams);
   const total = tasksQuery.data?.pagination.total ?? 0;
-  const pageCount = Math.max(1, Math.ceil(total / limit));
-  const currentPage = Math.floor(offset / limit) + 1;
 
   useEffect(() => {
     if (total > 0 && offset >= total) {
@@ -504,26 +501,6 @@ export function PlanningPage() {
                 ))}
               </div>
 
-              <div className="planning-date-options">
-                <DatePickerPopover
-                  mode="single"
-                  label="Конкретная дата"
-                  buttonLabel={
-                    plannedDate ? `Дата: ${formatPlanningDate(plannedDate)}` : "Дата"
-                  }
-                  value={plannedDate}
-                  onChange={changePlannedDate}
-                />
-                <DatePickerPopover
-                  mode="range"
-                  label="Диапазон дат"
-                  buttonLabel={
-                    hasPlannedRange ? `Период: ${formatPlanningRange(plannedRange)}` : "Период"
-                  }
-                  value={plannedRange}
-                  onChange={changePlannedRange}
-                />
-              </div>
             </div>
           </div>
 
@@ -544,25 +521,23 @@ export function PlanningPage() {
                 {[...statusesQuery.data]
                   .sort((left, right) => left.sort_order - right.sort_order)
                   .map((status) => (
-                    <label key={status.code}>
-                      <input
-                        type="checkbox"
-                        checked={selectedStatuses.includes(status.code)}
+                    <Checkbox key={status.code}
+                        isSelected={selectedStatuses.includes(status.code)}
                         onChange={() => toggleStatus(status.code)}
-                      />
-                      <span>{status.title}</span>
-                    </label>
+                    >
+                      <span>{status.code === "done" ? "Выполненная" : "Активная"}</span>
+                    </Checkbox>
                   ))}
               </div>
             ) : null}
           </div>
 
-          <label className="planning-filter planning-search">
+          <div className="planning-filter planning-search">
             <span>Поиск</span>
-            <span className="planning-search__control">
-              <Search size={17} aria-hidden="true" />
-              <input
+            <InputGroup className="planning-search__control">
+              <InputGroupInput
                 type="search"
+                aria-label="Поиск по названию и описанию"
                 value={search}
                 onChange={(event) =>
                   updateSearchParams(
@@ -570,25 +545,42 @@ export function PlanningPage() {
                     { replace: true }
                   )
                 }
-                placeholder="Поиск по задачам"
+                placeholder="Поиск по названию и описанию"
               />
-            </span>
-          </label>
+              <InputGroupAddon aria-hidden="true"><Search size={16} /></InputGroupAddon>
+              {search.trim() ? <InputGroupAddon align="inline-end" className="ui-input-group__results" aria-live="polite">
+                Найдено: {tasksQuery.isFetching ? "…" : tasksQuery.data ? total : "—"}
+              </InputGroupAddon> : null}
+            </InputGroup>
+          </div>
 
-          <label className="planning-filter planning-sort">
+          <div className="planning-filter planning-sort">
             <span>Сортировка</span>
-            <select value={sort} onChange={(event) => changeSort(event.target.value as TaskSort)}>
-              {sortOptions.map((option) => (
-                <option value={option.value} key={option.value}>
-                  {option.label}
-                </option>
-              ))}
-            </select>
-          </label>
+            <SelectCombobox label="Сортировка" value={sort} options={sortOptions} onChange={(value) => changeSort(value as TaskSort)} />
+          </div>
+          <div className="planning-filter planning-date-filter">
+            <span>Дата и период</span>
+            <div className="planning-date-options">
+              <DatePickerPopover
+                mode="single"
+                label="Конкретная дата"
+                buttonLabel={plannedDate ? `Дата: ${formatPlanningDate(plannedDate)}` : "Дата"}
+                value={plannedDate}
+                onChange={changePlannedDate}
+              />
+              <DatePickerPopover
+                mode="range"
+                label="Диапазон дат"
+                buttonLabel={hasPlannedRange ? `Период: ${formatPlanningRange(plannedRange)}` : "Период"}
+                value={plannedRange}
+                onChange={changePlannedRange}
+              />
+            </div>
+          </div>
         </div>
 
-        {hasActiveFilters ? (
-          <div className="planning-active-filter" role="status">
+        <div className="planning-active-filter" role="status">
+          {hasActiveFilters ? <>
             <span>
               {plannedDate
                 ? `Дата: ${formatCompactDate(plannedDate)}`
@@ -607,8 +599,8 @@ export function PlanningPage() {
             <button type="button" onClick={resetFilters}>
               Сбросить фильтры
             </button>
-          </div>
-        ) : null}
+          </> : null}
+        </div>
 
         {quickUpdateMutation.isError || recurrenceCompletionMutation.isError ? (
           <div className="planning-mutation-error" role="alert">
@@ -666,7 +658,7 @@ export function PlanningPage() {
                             ? task.status === "done"
                               ? "Выполнена"
                               : "Активная"
-                            : statusTitles.get(task.status) ?? task.status
+                            : statusTitles.get(task.status) ?? (task.status === "done" ? "Выполненная" : "Активная")
                         }
                         isPending={pendingTaskId === task.id}
                         onOpen={() => setSelectedTaskId(task.id)}
@@ -684,40 +676,7 @@ export function PlanningPage() {
               </div>
             )}
 
-            <footer className="planning-pagination">
-              <span>Всего задач: {total}</span>
-              <div>
-                <label>
-                  <span>На странице</span>
-                  <select value={limit} onChange={(event) => changeLimit(Number(event.target.value))}>
-                    <option value={10}>10</option>
-                    <option value={20}>20</option>
-                    <option value={50}>50</option>
-                  </select>
-                </label>
-                <button
-                  type="button"
-                  aria-label="Предыдущая страница"
-                  disabled={currentPage === 1}
-                  onClick={() =>
-                    updateSearchParams({ offset: String(Math.max(0, offset - limit)) })
-                  }
-                >
-                  <ChevronLeft size={17} aria-hidden="true" />
-                </button>
-                <span className="planning-pagination__page">
-                  {currentPage} / {pageCount}
-                </span>
-                <button
-                  type="button"
-                  aria-label="Следующая страница"
-                  disabled={currentPage >= pageCount}
-                  onClick={() => updateSearchParams({ offset: String(offset + limit) })}
-                >
-                  <ChevronRight size={17} aria-hidden="true" />
-                </button>
-              </div>
-            </footer>
+            <Pagination className="planning-pagination" label="Всего задач" total={total} limit={limit} offset={offset} onLimitChange={changeLimit} onOffsetChange={(value) => updateSearchParams({ offset: String(value) })} />
           </section>
         ) : null}
       </section>

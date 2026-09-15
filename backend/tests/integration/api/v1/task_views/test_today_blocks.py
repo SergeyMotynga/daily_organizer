@@ -39,7 +39,10 @@ async def test_today_view_groups_tasks_by_blocks(client: AsyncClient) -> None:
     assert response.status_code == 200
     payload = response.json()
     assert payload["date"] == today.isoformat()
-    assert block_titles(payload, "planned_today") == ["Запланирована сегодня"]
+    assert block_titles(payload, "planned_today") == [
+        "Дедлайн сегодня",
+        "Запланирована сегодня",
+    ]
     assert block_titles(payload, "inbox") == ["Входящая"]
     assert block_titles(payload, "soon_deadline") == ["Скоро дедлайн"]
     assert block_titles(payload, "today_deadline") == ["Дедлайн сегодня"]

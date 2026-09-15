@@ -1,4 +1,5 @@
-import { Archive, Calendar, CalendarDays, CalendarRange, Check, LogOut } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { Archive, Calendar, CalendarDays, CalendarRange, Check, ChevronDown, LogOut } from "lucide-react";
 import { NavLink, Outlet, useNavigate } from "react-router";
 
 import { useCurrentUserQuery, useLogoutMutation } from "../../features/auth/session";
@@ -17,6 +18,35 @@ export function AppShell() {
   const user = currentUserQuery.data;
   const displayName = user?.name || user?.login || "Пользователь";
   const initials = displayName.slice(0, 2).toUpperCase();
+  const [accountOpen, setAccountOpen] = useState(false);
+  const accountRef = useRef<HTMLDivElement>(null);
+  const accountToggleRef = useRef<HTMLButtonElement>(null);
+
+  useEffect(() => {
+    if (!accountOpen) return;
+
+    function closeOutside(event: PointerEvent | FocusEvent) {
+      if (!accountRef.current?.contains(event.target as Node)) {
+        setAccountOpen(false);
+      }
+    }
+
+    function handleEscape(event: KeyboardEvent) {
+      if (event.key === "Escape") {
+        setAccountOpen(false);
+        accountToggleRef.current?.focus({ preventScroll: true });
+      }
+    }
+
+    document.addEventListener("pointerdown", closeOutside);
+    document.addEventListener("focusin", closeOutside);
+    document.addEventListener("keydown", handleEscape);
+    return () => {
+      document.removeEventListener("pointerdown", closeOutside);
+      document.removeEventListener("focusin", closeOutside);
+      document.removeEventListener("keydown", handleEscape);
+    };
+  }, [accountOpen]);
 
   async function handleLogout() {
     try {
@@ -31,7 +61,7 @@ export function AppShell() {
       <aside className="app-shell__sidebar" aria-label="Основная навигация">
         <div className="app-shell__brand">
           <span className="brand-mark" aria-hidden="true">
-            <Check size={20} strokeWidth={3} />
+            <Check size={28} strokeWidth={3} />
           </span>
           <span>Daily Organizer</span>
           <span className="version-badge">v0.1</span>
@@ -45,12 +75,12 @@ export function AppShell() {
                 isActive ? "app-shell__nav-link app-shell__nav-link--active" : "app-shell__nav-link"
               }
             >
-              <Icon size={17} strokeWidth={1.9} aria-hidden="true" />
+              <Icon size={21} strokeWidth={1.9} aria-hidden="true" />
               <span>{label}</span>
             </NavLink>
           ))}
         </nav>
-        <div className="app-shell__account">
+        <div className="app-shell__account" ref={accountRef}>
           <div className="app-shell__avatar" aria-hidden="true">
             {initials}
           </div>
@@ -59,14 +89,32 @@ export function AppShell() {
             {user?.login ? <span>{user.login}</span> : null}
           </div>
           <button
-            className="app-shell__logout"
-            disabled={logoutMutation.isPending}
-            onClick={handleLogout}
+            className="app-shell__account-toggle"
+            ref={accountToggleRef}
+            aria-label="Меню аккаунта"
+            aria-expanded={accountOpen}
+            aria-controls="account-actions"
+            onClick={() => setAccountOpen((open) => !open)}
             type="button"
           >
-            <LogOut size={15} strokeWidth={2.2} />
-            <span>{logoutMutation.isPending ? "..." : "Выйти"}</span>
+            <ChevronDown size={18} aria-hidden="true" />
           </button>
+          <div
+            id="account-actions"
+            className={`app-shell__account-menu${accountOpen ? " app-shell__account-menu--open" : ""}`}
+            aria-hidden={!accountOpen}
+            inert={!accountOpen}
+          >
+            <button
+              className="app-shell__logout"
+              disabled={logoutMutation.isPending}
+              onClick={handleLogout}
+              type="button"
+            >
+              <LogOut size={17} aria-hidden="true" />
+              <span>{logoutMutation.isPending ? "Выходим…" : "Выйти"}</span>
+            </button>
+          </div>
         </div>
       </aside>
       <main className="app-shell__content">

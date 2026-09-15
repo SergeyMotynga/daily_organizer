@@ -9,7 +9,6 @@ export function PrimaryButton({ children, className, ...props }: PrimaryButtonPr
 
   return (
     <span className="primary-button-shell">
-      <span className="primary-button-shell__glow" aria-hidden="true" />
       <button className={buttonClassName} {...props}>
         {children}
       </button>

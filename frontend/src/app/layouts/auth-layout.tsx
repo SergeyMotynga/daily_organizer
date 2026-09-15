@@ -1,4 +1,4 @@
-import { CalendarDays, Check, ShieldCheck, Target, Zap } from "lucide-react";
+import { CalendarDays, Check, LockKeyhole, Target, Zap } from "lucide-react";
 import { Outlet, useLocation } from "react-router";
 
 type AuthVariant = "login" | "register";
@@ -82,7 +82,7 @@ function RegisterInfo() {
         </li>
         <li>
           <span aria-hidden="true">
-            <ShieldCheck size={20} strokeWidth={2.3} />
+            <LockKeyhole size={20} strokeWidth={2.3} />
           </span>
           <div>
             <strong>Ваши данные — только ваши</strong>
@@ -104,21 +104,13 @@ export function AuthLayout() {
       <div className="auth-page__stage">
         <div className="auth-page__form-pane">
           <section className={`auth-card auth-card--${variant}`} aria-labelledby={`${variant}-title`}>
-            <div
-              className={
-                isRegister ? "auth-card__header auth-card__header--center" : "auth-card__header"
-              }
-            >
-              <span className="brand-mark" aria-hidden="true">
-                <Check size={26} strokeWidth={3} />
-              </span>
-              <div>
+            <div className="auth-card__header">
                 <div className="auth-card__brand-row">
+                  <span className="brand-mark" aria-hidden="true"><Check size={30} strokeWidth={3} /></span>
                   <span className="auth-card__brand">Daily Organizer</span>
                   <span className="version-badge">v0.1</span>
                 </div>
                 <p className="auth-card__subtitle">Личный план задач без лишнего шума</p>
-              </div>
             </div>
             {isRegister ? <div className="auth-card__divider" /> : null}
             <Outlet />

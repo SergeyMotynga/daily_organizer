@@ -1,10 +1,8 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   AlertCircle,
   Archive,
   CalendarDays,
-  ChevronLeft,
-  ChevronRight,
   Plus,
   RotateCcw,
   Search
@@ -18,6 +16,10 @@ import {
   useTasksQuery,
   useUpdateTaskMutation
 } from "../features/tasks/queries";
+import { Pagination } from "../shared/ui/pagination";
+import { DatePickerPopover } from "../shared/ui/date-picker-popover";
+import { InputGroup, InputGroupAddon, InputGroupInput } from "../shared/ui/input-group";
+import { SelectCombobox } from "../shared/ui/select-combobox";
 
 const sortOptions: { value: TaskSort; label: string }[] = [
   { value: "created_at_desc", label: "Сначала новые задачи" },
@@ -76,6 +78,25 @@ function ArchiveTaskRow({
   onDeleteConfirm: () => void;
   onOpen: () => void;
 }) {
+  const deleteButtonRef = useRef<HTMLButtonElement>(null);
+  const cancelButtonRef = useRef<HTMLButtonElement>(null);
+  const restoreFocusRef = useRef(false);
+
+  useEffect(() => {
+    if (isDeleteConfirmOpen) {
+      cancelButtonRef.current?.focus({ preventScroll: true });
+    } else if (restoreFocusRef.current) {
+      restoreFocusRef.current = false;
+      deleteButtonRef.current?.focus({ preventScroll: true });
+    }
+  }, [isDeleteConfirmOpen]);
+
+  function cancelDelete() {
+    if (isDeleting) return;
+    restoreFocusRef.current = true;
+    onDeleteCancel();
+  }
+
   return (
     <tr>
       <td>
@@ -88,8 +109,8 @@ function ArchiveTaskRow({
       <td>
         <span className={task.planned_date ? "archive-date" : "archive-date archive-date--muted"}>
           {task.planned_date ? <CalendarDays size={14} aria-hidden="true" /> : null}
-          {task.planned_date ? formatDate(task.planned_date) : "Без даты"} ·{" "}
-          {task.planned_time ?? "—"}
+          {task.planned_date ? formatDate(task.planned_date) : "Без даты"}
+          {task.planned_time ? `, ${task.planned_time.slice(0, 5)}` : ""}
         </span>
       </td>
       <td>
@@ -99,10 +120,24 @@ function ArchiveTaskRow({
         <span className="archive-date archive-date--muted">{formatDateTime(task.archived_at)}</span>
       </td>
       <td className="archive-actions">
-        {isDeleteConfirmOpen ? (
-          <span className="archive-delete-confirm">
+        <span className="archive-action-switch" onKeyDown={(event) => {
+          if (event.key === "Escape" && isDeleteConfirmOpen && !isDeleting) {
+            event.preventDefault();
+            event.stopPropagation();
+            cancelDelete();
+          }
+        }}>
+          <span
+            id={`archive-delete-${task.id}`}
+            role="group"
+            aria-label={`Подтверждение удаления: ${task.title}`}
+            aria-busy={isDeleting}
+            className={`archive-delete-confirm${isDeleteConfirmOpen ? " archive-action-layer--visible" : ""}`}
+            aria-hidden={!isDeleteConfirmOpen}
+            inert={!isDeleteConfirmOpen}
+          >
             <span>Удалить?</span>
-            <button type="button" onClick={onDeleteCancel} disabled={isDeleting}>
+            <button ref={cancelButtonRef} type="button" onClick={cancelDelete} disabled={isDeleting}>
               Нет
             </button>
             <button
@@ -114,8 +149,11 @@ function ArchiveTaskRow({
               {isDeleting ? "Удаляем…" : "Да"}
             </button>
           </span>
-        ) : (
-          <span className="archive-action-group">
+          <span
+            className={`archive-action-group${!isDeleteConfirmOpen ? " archive-action-layer--visible" : ""}`}
+            aria-hidden={isDeleteConfirmOpen}
+            inert={isDeleteConfirmOpen}
+          >
             <button
               className="archive-action archive-action--restore"
               type="button"
@@ -125,15 +163,18 @@ function ArchiveTaskRow({
               {isRestoring ? "Возвращаем…" : "Вернуть"}
             </button>
             <button
+              ref={deleteButtonRef}
               className="archive-action archive-action--danger"
               type="button"
+              aria-expanded={isDeleteConfirmOpen}
+              aria-controls={`archive-delete-${task.id}`}
               onClick={onDeleteRequest}
               disabled={isRestoring || isDeleting}
             >
               Удалить
             </button>
           </span>
-        )}
+        </span>
       </td>
     </tr>
   );
@@ -145,6 +186,7 @@ export function ArchivePage() {
   const [sort, setSort] = useState<TaskSort>("created_at_desc");
   const [limit, setLimit] = useState(20);
   const [offset, setOffset] = useState(0);
+  const [plannedDate, setPlannedDate] = useState("");
   const [deleteConfirmTaskId, setDeleteConfirmTaskId] = useState<string | null>(null);
   const [isCreateTaskOpen, setIsCreateTaskOpen] = useState(false);
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
@@ -163,6 +205,7 @@ export function ArchivePage() {
     preset: "all",
     statuses: ["todo", "done"],
     archived: true,
+    planned_date: plannedDate || undefined,
     q: debouncedSearch,
     sort,
     limit,
@@ -170,8 +213,6 @@ export function ArchivePage() {
   };
   const tasksQuery = useTasksQuery(queryParams);
   const total = tasksQuery.data?.pagination.total ?? 0;
-  const pageCount = Math.max(1, Math.ceil(total / limit));
-  const currentPage = Math.floor(offset / limit) + 1;
   const restoringTaskId = restoreTaskMutation.isPending
     ? restoreTaskMutation.variables.taskId
     : null;
@@ -224,25 +265,30 @@ export function ArchivePage() {
         </header>
 
         <div className="archive-toolbar">
-          <label className="archive-search">
-            <Search size={17} aria-hidden="true" />
-            <input
+          <InputGroup className="archive-search">
+            <InputGroupInput
               type="search"
+              aria-label="Поиск в архиве по названию и описанию"
               value={search}
               onChange={(event) => setSearch(event.target.value)}
-              placeholder="Поиск по архиву"
+              placeholder="Поиск по названию и описанию"
             />
-          </label>
-          <label className="archive-sort">
+            <InputGroupAddon aria-hidden="true"><Search size={16} /></InputGroupAddon>
+            {search.trim() ? <InputGroupAddon align="inline-end" className="ui-input-group__results" aria-live="polite">
+              Найдено: {tasksQuery.isFetching ? "…" : tasksQuery.data ? total : "—"}
+            </InputGroupAddon> : null}
+          </InputGroup>
+          <details className="archive-filters">
+            <summary>Фильтры</summary>
+            <div className="archive-filters__body">
+              <DatePickerPopover mode="single" label="Плановая дата" buttonLabel={plannedDate ? formatDate(plannedDate) : "Выберите дату"} value={plannedDate} onChange={(value) => { setPlannedDate(value); setOffset(0); }} />
+              <button type="button" onClick={() => { setPlannedDate(""); setOffset(0); }}>Сбросить</button>
+            </div>
+          </details>
+          <div className="archive-sort">
             <span>Сортировка</span>
-            <select value={sort} onChange={(event) => changeSort(event.target.value as TaskSort)}>
-              {sortOptions.map((option) => (
-                <option value={option.value} key={option.value}>
-                  {option.label}
-                </option>
-              ))}
-            </select>
-          </label>
+            <SelectCombobox label="Сортировка" value={sort} options={sortOptions} onChange={(value) => changeSort(value as TaskSort)} />
+          </div>
         </div>
 
         {restoreTaskMutation.isError || deleteTaskMutation.isError ? (
@@ -314,38 +360,7 @@ export function ArchivePage() {
               </div>
             )}
 
-            <footer className="archive-pagination">
-              <span>Всего в архиве: {total}</span>
-              <div>
-                <label>
-                  <span>На странице</span>
-                  <select value={limit} onChange={(event) => changeLimit(Number(event.target.value))}>
-                    <option value={10}>10</option>
-                    <option value={20}>20</option>
-                    <option value={50}>50</option>
-                  </select>
-                </label>
-                <button
-                  type="button"
-                  aria-label="Предыдущая страница"
-                  disabled={currentPage === 1}
-                  onClick={() => setOffset(Math.max(0, offset - limit))}
-                >
-                  <ChevronLeft size={17} aria-hidden="true" />
-                </button>
-                <span className="archive-pagination__page">
-                  {currentPage} / {pageCount}
-                </span>
-                <button
-                  type="button"
-                  aria-label="Следующая страница"
-                  disabled={currentPage >= pageCount}
-                  onClick={() => setOffset(offset + limit)}
-                >
-                  <ChevronRight size={17} aria-hidden="true" />
-                </button>
-              </div>
-            </footer>
+            <Pagination className="archive-pagination" label="Всего в архиве" total={total} limit={limit} offset={offset} onLimitChange={changeLimit} onOffsetChange={setOffset} />
           </section>
         ) : null}
       {selectedTaskId ? (

@@ -4,6 +4,7 @@ import { Link, useNavigate } from "react-router";
 
 import { PrimaryButton } from "../features/auth/primary-button";
 import { getAuthErrorMessage, useLoginMutation } from "../features/auth/session";
+import { Checkbox } from "../shared/ui/checkbox";
 
 type LoginFormErrors = {
   login?: string;
@@ -14,7 +15,7 @@ function validateLoginForm(login: string, password: string): LoginFormErrors {
   const errors: LoginFormErrors = {};
 
   if (!login.trim()) {
-    errors.login = "Введите login.";
+    errors.login = "Введите логин.";
   }
 
   if (!password) {
@@ -111,14 +112,9 @@ export function LoginPage() {
         ) : null}
       </label>
 
-      <label className="auth-checkbox">
-        <input
-          checked={rememberMe}
-          onChange={(event) => setRememberMe(event.target.checked)}
-          type="checkbox"
-        />
+      <Checkbox className="auth-checkbox" isSelected={rememberMe} onChange={setRememberMe}>
         <span>Оставаться в системе</span>
-      </label>
+      </Checkbox>
 
       {loginMutation.isError ? (
         <div className="auth-alert" role="alert">

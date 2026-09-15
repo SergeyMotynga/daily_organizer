@@ -2,7 +2,7 @@ import { type ReactNode, useState } from "react";
 import type { LucideIcon } from "lucide-react";
 import {
   AlertCircle,
-  Archive,
+  MoreVertical,
   CalendarDays,
   CheckCircle2,
   ChevronRight,
@@ -13,6 +13,8 @@ import {
   RotateCcw
 } from "lucide-react";
 import { Link } from "react-router";
+import { Checkbox } from "../shared/ui/checkbox";
+import { SelectCombobox } from "../shared/ui/select-combobox";
 
 import type { TaskStatusCode } from "../entities/task/types";
 import { CreateTaskDrawer } from "../features/tasks/create-task-drawer";
@@ -50,7 +52,6 @@ type TaskGroupProps = {
   pendingTaskId: string | null;
   onOpenTask: (taskId: string) => void;
   onStatusChange: (task: Task, status: TaskStatusCode) => void;
-  onArchive: (taskId: string) => void;
   actions?: ReactNode;
 };
 
@@ -116,31 +117,29 @@ function TaskRow({
   isPending,
   onOpen,
   onStatusChange,
-  onArchive
 }: {
   task: Task;
   today: string;
   isPending: boolean;
   onOpen: () => void;
   onStatusChange: (status: TaskStatusCode) => void;
-  onArchive: () => void;
 }) {
   const isDone = task.status === "done";
   const displayDate = task.deadline_date ?? task.planned_date;
-  const displayTime = task.deadline_date ? task.deadline_time : task.planned_time;
+  const displayTime = task.deadline_date ? task.deadline_time : null;
+  const dateTone = task.deadline_date && task.deadline_date < today
+    ? "danger" : task.deadline_date === today ? "warning" : "default";
 
   return (
     <li className={isDone ? "today-task today-task--done" : "today-task"}>
-      <button
+      <Checkbox
         className="today-task__check"
-        type="button"
+        isSelected={isDone}
         aria-label={isDone ? `Вернуть в активные: ${task.title}` : `Отметить выполненной: ${task.title}`}
         title={isDone ? "Вернуть в активные" : "Отметить выполненной"}
-        onClick={() => onStatusChange(isDone ? "todo" : "done")}
-        disabled={isPending}
-      >
-        {isDone ? <CheckCircle2 size={17} /> : null}
-      </button>
+        onChange={(selected) => onStatusChange(selected ? "done" : "todo")}
+        isDisabled={isPending}
+      />
       <span className="today-task__content">
         <button className="today-task__title" type="button" onClick={onOpen} disabled={isPending}>
           {task.title}
@@ -152,26 +151,27 @@ function TaskRow({
           </span>
         ) : null}
       </span>
-      {displayDate ? (
-        <span className="today-task__date">
+      <span className="today-task__time">{task.planned_time ? <span>{task.planned_time.slice(0, 5)}</span> : "—"}</span>
+      {displayDate && !isDone ? (
+        <span className={`today-task__date today-task__date--${dateTone}`}>
           <CalendarDays size={15} />
           {formatTaskDate(displayDate, today)}
-          {displayTime ? ` · ${displayTime}` : ""}
+          {displayTime ? `, ${displayTime.slice(0, 5)}` : ""}
         </span>
       ) : (
         <span className="today-task__date today-task__date--muted">
-          Без даты{task.planned_time ? ` · ${task.planned_time}` : ""}
+          —
         </span>
       )}
       <button
         className="today-task__archive"
         type="button"
-        aria-label={`Архивировать: ${task.title}`}
-        title="Архивировать"
-        onClick={onArchive}
+        aria-label={`Действия: ${task.title}`}
+        title="Открыть задачу и действия"
+        onClick={onOpen}
         disabled={isPending}
       >
-        <Archive size={15} aria-hidden="true" />
+        <MoreVertical size={17} aria-hidden="true" />
       </button>
     </li>
   );
@@ -186,7 +186,6 @@ function TaskGroup({
   pendingTaskId,
   onOpenTask,
   onStatusChange,
-  onArchive,
   actions
 }: TaskGroupProps) {
   return (
@@ -208,7 +207,6 @@ function TaskGroup({
               isPending={pendingTaskId === task.id}
               onOpen={() => onOpenTask(task.id)}
               onStatusChange={(status) => onStatusChange(task, status)}
-              onArchive={() => onArchive(task.id)}
             />
           ))}
         </ul>
@@ -287,18 +285,13 @@ function CompactTaskCard({
                     <Repeat2 className="task-recurrence-icon" size={13} aria-label="Повторяется" />
                   ) : null}
                 </button>
-                <span>
-                  {showDeadline && task.deadline_date
-                    ? `${formatTaskDate(task.deadline_date, today)} · `
-                    : ""}
-                  {(showDeadline ? task.deadline_time : task.planned_time) ?? "—"}
-                </span>
+                {showDeadline && task.deadline_date ? <span>{formatTaskDate(task.deadline_date, today)}</span> : null}
               </li>
             ))}
           </ul>
           {isTruncated ? (
             <Link className="today-compact-card__more" to={moreTo}>
-              Показать больше
+              Показать все
             </Link>
           ) : null}
         </>
@@ -315,7 +308,6 @@ function TodayContent({
   pendingTaskId,
   onOpenTask,
   onStatusChange,
-  onArchive,
   onSortChange
 }: {
   data: TodayViewResponse;
@@ -323,7 +315,6 @@ function TodayContent({
   pendingTaskId: string | null;
   onOpenTask: (taskId: string) => void;
   onStatusChange: (task: Task, status: TaskStatusCode) => void;
-  onArchive: (taskId: string) => void;
   onSortChange: (sort: TodaySort) => void;
 }) {
   const { blocks, summary } = data;
@@ -413,21 +404,11 @@ function TodayContent({
               pendingTaskId={pendingTaskId}
               onOpenTask={onOpenTask}
               onStatusChange={onStatusChange}
-              onArchive={onArchive}
               actions={
-                <label className="today-group__sort">
+                <div className="today-group__sort">
                   <span>Сортировка</span>
-                  <select
-                    value={sort}
-                    onChange={(event) => onSortChange(event.target.value as TodaySort)}
-                  >
-                    {todaySortOptions.map((option) => (
-                      <option value={option.value} key={option.value}>
-                        {option.label}
-                      </option>
-                    ))}
-                  </select>
-                </label>
+                  <SelectCombobox label="Сортировка плана на сегодня" value={sort} options={todaySortOptions} onChange={(value) => onSortChange(value as TodaySort)} />
+                </div>
               }
             />
             <TaskGroup
@@ -439,7 +420,6 @@ function TodayContent({
               pendingTaskId={pendingTaskId}
               onOpenTask={onOpenTask}
               onStatusChange={onStatusChange}
-              onArchive={onArchive}
             />
           </div>
 
@@ -495,9 +475,6 @@ export function TodayPage() {
     quickUpdateMutation.mutate({ taskId: task.id, payload: { status } });
   }
 
-  function handleArchive(taskId: string) {
-    quickUpdateMutation.mutate({ taskId, payload: { archived: true } });
-  }
 
   return (
     <>
@@ -558,7 +535,6 @@ export function TodayPage() {
             pendingTaskId={pendingTaskId}
             onOpenTask={setSelectedTaskId}
             onStatusChange={handleQuickStatusChange}
-            onArchive={handleArchive}
             onSortChange={setSort}
           />
         ) : null}

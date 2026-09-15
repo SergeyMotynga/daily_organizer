@@ -13,7 +13,9 @@
     "@daypicker/react": "^10.0.1",
     "@tanstack/react-query": "^5.102.8",
     "lucide-react": "^1.41.0",
+    "ogl": "^1.0.11",
     "react": "^19.2.8",
+    "react-aria-components": "^1.21.1",
     "react-dom": "^19.2.8",
     "react-router": "^8.3.1"
   },

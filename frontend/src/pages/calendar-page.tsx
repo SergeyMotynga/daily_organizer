@@ -155,7 +155,7 @@ function CalendarItemChip({ item, onOpen }: { item: DatedCalendarItem; onOpen: (
   );
 }
 
-function CalendarSideItem({ item, onOpen }: { item: DatedCalendarItem; onOpen: () => void }) {
+function CalendarSideItem({ item, onOpen, showTime = false }: { item: DatedCalendarItem; onOpen: () => void; showTime?: boolean }) {
   const time = getItemTime(item);
   const recurrenceLabel =
     item.kind === "recurrence"
@@ -168,7 +168,7 @@ function CalendarSideItem({ item, onOpen }: { item: DatedCalendarItem; onOpen: (
       type="button"
       onClick={onOpen}
     >
-      {item.kind === "planned" && time ? (
+      {(item.kind === "planned" || showTime) && time ? (
         <span className="calendar-side-item__time">{time}</span>
       ) : item.kind === "deadline" ? (
         <Clock3 size={17} aria-hidden="true" />
@@ -250,8 +250,8 @@ export function CalendarPage() {
   }, [calendarQuery.data]);
 
   const selectedItems = itemsByDate.get(dateValue) ?? [];
-  const selectedPlanned = selectedItems.filter((item) => item.kind === "planned");
-  const selectedTimed = selectedPlanned.filter((item) => item.task.planned_time);
+  const selectedPlanned = selectedItems.filter((item) => item.kind !== "deadline");
+  const selectedTimed = selectedPlanned.filter((item) => item.task.planned_time).sort((a, b) => (a.task.planned_time ?? "").localeCompare(b.task.planned_time ?? ""));
   const selectedUntimed = selectedPlanned.filter((item) => !item.task.planned_time);
   const selectedDeadlines = selectedItems.filter((item) => item.kind === "deadline");
   const selectedRecurrences = selectedItems.filter((item) => item.kind === "recurrence");
@@ -368,7 +368,7 @@ export function CalendarPage() {
                       (item) => item.kind !== "deadline" && Boolean(getItemTime(item))
                     );
                     const deadlines = items.filter((item) => item.kind === "deadline");
-                    const scheduled = [...timed, ...deadlines];
+                    const scheduled = [...timed.sort((a, b) => (getItemTime(a) ?? "").localeCompare(getItemTime(b) ?? "")), ...deadlines];
                     return (
                       <article
                         key={dayValue}
@@ -429,15 +429,15 @@ export function CalendarPage() {
                           {date.getDate()}
                         </button>
                         <div className="calendar-month-day__items">
-                          {items.slice(0, 3).map((item) => (
+                          {items.slice(0, 2).map((item) => (
                             <CalendarItemChip
                               key={`${item.kind}-${item.task.id}-${dayValue}`}
                               item={item}
                               onOpen={() => setSelectedTaskId(item.task.id)}
                             />
                           ))}
-                          {items.length > 3 ? (
-                            <CalendarMoreLink date={dayValue} count={items.length - 3} />
+                          {items.length > 2 ? (
+                            <CalendarMoreLink date={dayValue} count={items.length - 2} />
                           ) : null}
                         </div>
                       </article>
@@ -460,6 +460,7 @@ export function CalendarPage() {
                       <CalendarSideItem
                         key={`${item.kind}-${item.task.id}-${dateValue}`}
                         item={item}
+                        showTime
                         onOpen={() => setSelectedTaskId(item.task.id)}
                       />
                     ))}

@@ -15,6 +15,7 @@ import {
 import type { TaskStatusCode } from "../../entities/task/types";
 import { useTodayViewQuery } from "../today/queries";
 import { EditTaskDrawer } from "./edit-task-drawer";
+import { isComboboxHandlingEscape, useTaskDrawerTransition } from "./task-drawer-transition";
 import {
   useDeleteTaskMutation,
   useRecurrenceCompletionMutation,
@@ -64,7 +65,8 @@ function formatDateTime(date: string | null): string {
     .replace(".", "");
 }
 
-export function TaskDetailsDrawer({ taskId, onClose }: TaskDetailsDrawerProps) {
+export function TaskDetailsDrawer({ taskId, onClose: onDismiss }: TaskDetailsDrawerProps) {
+  const { onClose, isClosing } = useTaskDrawerTransition(onDismiss);
   const taskQuery = useTaskQuery(taskId);
   const todayViewQuery = useTodayViewQuery();
   const statusesQuery = useTaskStatusesQuery();
@@ -79,25 +81,27 @@ export function TaskDetailsDrawer({ taskId, onClose }: TaskDetailsDrawerProps) {
     recurrenceCompletionMutation.isPending;
 
   useEffect(() => {
+    if (isEditing) return;
     const previousOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
 
     function handleKeyDown(event: KeyboardEvent) {
-      if (event.key === "Escape" && !isMutating) {
+      if (isComboboxHandlingEscape(event)) return;
+      if (event.key === "Escape" && !event.defaultPrevented && !isMutating) {
         onClose();
       }
     }
 
-    document.addEventListener("keydown", handleKeyDown);
+    document.addEventListener("keydown", handleKeyDown, true);
 
     return () => {
       document.body.style.overflow = previousOverflow;
-      document.removeEventListener("keydown", handleKeyDown);
+      document.removeEventListener("keydown", handleKeyDown, true);
     };
-  }, [isMutating, onClose]);
+  }, [isEditing, isMutating, onClose]);
 
   if (isEditing) {
-    return <EditTaskDrawer taskId={taskId} onClose={onClose} />;
+    return <EditTaskDrawer taskId={taskId} onClose={onDismiss} />;
   }
 
   const task = taskQuery.data;
@@ -117,7 +121,7 @@ export function TaskDetailsDrawer({ taskId, onClose }: TaskDetailsDrawerProps) {
       ? isCompletedToday
         ? "Выполнена сегодня"
         : "Повторяется"
-      : statusesQuery.data?.find((status) => status.code === task.status)?.title ?? task.status
+      : statusesQuery.data?.find((status) => status.code === task.status)?.title ?? (task.status === "done" ? "Выполненная" : "Активная")
     : "";
 
   async function changeStatus(status: TaskStatusCode) {
@@ -161,7 +165,7 @@ export function TaskDetailsDrawer({ taskId, onClose }: TaskDetailsDrawerProps) {
   }
 
   return (
-    <div className="task-drawer-layer">
+    <div className={`task-drawer-layer${isClosing ? " task-drawer-layer--closing" : ""}`}>
       <button
         className="task-drawer-backdrop"
         type="button"
@@ -171,6 +175,7 @@ export function TaskDetailsDrawer({ taskId, onClose }: TaskDetailsDrawerProps) {
       />
       <aside
         className="task-drawer task-details"
+        inert={isClosing}
         role="dialog"
         aria-modal="true"
         aria-labelledby="task-details-title"
@@ -240,7 +245,7 @@ export function TaskDetailsDrawer({ taskId, onClose }: TaskDetailsDrawerProps) {
                     Когда делать
                   </dt>
                   <dd>
-                    {formatDate(task.planned_date)}, {formatTime(task.planned_time)}
+                    {formatDate(task.planned_date)}{task.planned_time ? `, ${formatTime(task.planned_time)}` : ""}
                   </dd>
                 </div>
                 <div>
@@ -269,7 +274,7 @@ export function TaskDetailsDrawer({ taskId, onClose }: TaskDetailsDrawerProps) {
                         : ", без даты окончания"}
                     </dd>
                   </div>
-                ) : null}
+                ) : <div><dt><Repeat2 size={18} aria-hidden="true" />Повторение</dt><dd>Не повторять</dd></div>}
                 <div>
                   <dt>
                     <Clock3 size={18} aria-hidden="true" />

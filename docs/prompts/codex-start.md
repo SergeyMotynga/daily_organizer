@@ -7,7 +7,7 @@
 
 Контекст проекта:
 - Это pet-проект личного органайзера.
-- v0.1 по функционалу является daily-first to-do list.
+- v0.1 функционально готова и является daily-first to-do list.
 - Долгосрочно приложение должно развиваться в органайзер с задачами, заметками, проектами, планами, отчетами, финансами и будущей MCP-интеграцией.
 - Поэтому нельзя проектировать общий app shell как todo-only приложение.
 
@@ -16,6 +16,8 @@
 2. docs/project.md
 3. docs/development/git-flow.md
 4. docs/development/codex-working-rules.md
+5. docs/version/v0.1/README.md
+6. docs/version/v0.2/plan.md
 
 Источник истины по продукту находится в Notion и Miro:
 - Notion проект: https://app.notion.com/p/3c7678c73f47819599c6eb5a53b79a08
@@ -34,12 +36,12 @@ Git flow:
 - Коммиты в стиле Conventional Commits.
 
 Текущая версия:
-- v0.1: auth, tasks, Today view, Planning, Archive.
-- Не входят: notes, finance, AI/MCP implementation, reminders, calendar, mobile app, VPS deploy.
+- v0.1: auth, tasks, Today view, Planning, Calendar, Archive, task drawers, deadline time, recurring tasks, date filters, adaptive UI.
+- Не входят: notes, finance, AI/MCP implementation, reminders, mobile app, VPS deploy.
 
 Стек:
 - Backend: FastAPI, SQLAlchemy 2, Alembic, PostgreSQL, Pydantic, uv.
-- Frontend: React, TypeScript, Vite, React Router, TanStack Query, shadcn/ui + Tailwind CSS.
+- Frontend: React, TypeScript, Vite, React Router, TanStack Query, @daypicker/react, react-aria-components, custom CSS.
 - Dev infra: Docker Compose, Taskfile или Makefile, ruff, mypy/pyright, pytest, pre-commit, .editorconfig.
 
 Архитектура backend:

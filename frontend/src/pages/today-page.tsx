@@ -16,6 +16,7 @@ import { Link } from "react-router";
 import { Checkbox } from "../shared/ui/checkbox";
 import { SelectCombobox } from "../shared/ui/select-combobox";
 
+import { appRoutePaths } from "../app/route-paths";
 import type { TaskStatusCode } from "../entities/task/types";
 import { CreateTaskDrawer } from "../features/tasks/create-task-drawer";
 import { TaskDetailsDrawer } from "../features/tasks/task-details-drawer";
@@ -232,7 +233,7 @@ function AttentionCard({
       </header>
       <Link
         className="today-attention-row today-attention-row--link"
-        to="/app/planning?deadline_preset=today&statuses=todo"
+        to={`${appRoutePaths.tasks.planning}?deadline_preset=today&statuses=todo`}
       >
         <span>Дедлайн сегодня</span>
         <strong className="today-attention-row--warning">{todayDeadline}</strong>
@@ -240,7 +241,7 @@ function AttentionCard({
       </Link>
       <Link
         className="today-attention-row today-attention-row--link"
-        to="/app/planning?deadline_preset=overdue&statuses=todo"
+        to={`${appRoutePaths.tasks.planning}?deadline_preset=overdue&statuses=todo`}
       >
         <span>Просрочено</span>
         <strong className="today-attention-row--danger">{overdue}</strong>
@@ -324,35 +325,35 @@ function TodayContent({
       value: blocks.planned_today.length,
       icon: CalendarDays,
       tone: "primary",
-      to: "/app/planning?preset=today&statuses=todo"
+      to: `${appRoutePaths.tasks.planning}?preset=today&statuses=todo`
     },
     {
       label: "Входящие",
       value: blocks.inbox.length,
       icon: Inbox,
       tone: "neutral",
-      to: "/app/planning?preset=no_date&statuses=todo"
+      to: `${appRoutePaths.tasks.planning}?preset=no_date&statuses=todo`
     },
     {
       label: "Дедлайн сегодня",
       value: summary.today_deadline,
       icon: Clock3,
       tone: "warning",
-      to: "/app/planning?deadline_preset=today&statuses=todo"
+      to: `${appRoutePaths.tasks.planning}?deadline_preset=today&statuses=todo`
     },
     {
       label: "Просрочено",
       value: summary.overdue,
       icon: AlertCircle,
       tone: "danger",
-      to: "/app/planning?deadline_preset=overdue&statuses=todo"
+      to: `${appRoutePaths.tasks.planning}?deadline_preset=overdue&statuses=todo`
     },
     {
       label: "Выполнено",
       value: summary.done_today,
       icon: CheckCircle2,
       tone: "success",
-      to: "/app/planning?preset=all&statuses=done"
+      to: `${appRoutePaths.tasks.planning}?preset=all&statuses=done`
     }
   ];
   const taskCount = Object.values(blocks).reduce((total, tasks) => total + tasks.length, 0);
@@ -432,7 +433,7 @@ function TodayContent({
               title="Входящие"
               tasks={inbox}
               today={data.date}
-              moreTo="/app/planning?preset=no_date&statuses=todo"
+              moreTo={`${appRoutePaths.tasks.planning}?preset=no_date&statuses=todo`}
               onOpenTask={onOpenTask}
             />
             <CompactTaskCard
@@ -440,7 +441,7 @@ function TodayContent({
               tasks={soonDeadline}
               today={data.date}
               showDeadline
-              moreTo="/app/planning?deadline_preset=soon&statuses=todo"
+              moreTo={`${appRoutePaths.tasks.planning}?deadline_preset=soon&statuses=todo`}
               onOpenTask={onOpenTask}
             />
           </aside>

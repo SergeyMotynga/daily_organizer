@@ -2,6 +2,7 @@ import { FormEvent, useState } from "react";
 import { Eye, EyeOff, LockKeyhole, UserRound } from "lucide-react";
 import { Link, useNavigate } from "react-router";
 
+import { appRoutePaths } from "../app/route-paths";
 import { PrimaryButton } from "../features/auth/primary-button";
 import { getAuthErrorMessage, useLoginMutation } from "../features/auth/session";
 import { Checkbox } from "../shared/ui/checkbox";
@@ -46,7 +47,7 @@ export function LoginPage() {
 
     try {
       await loginMutation.mutateAsync({ login: login.trim(), password });
-      navigate("/app/today", { replace: true });
+      navigate(appRoutePaths.tasks.today, { replace: true });
     } catch {
       return;
     }

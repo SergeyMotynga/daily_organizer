@@ -1,6 +1,7 @@
 import { Navigate, Outlet } from "react-router";
 
 import { isUnauthorizedError, useCurrentUserQuery } from "../../features/auth/session";
+import { appRoutePaths } from "../route-paths";
 
 export function PublicOnlyLayout() {
   const currentUserQuery = useCurrentUserQuery();
@@ -12,7 +13,7 @@ export function PublicOnlyLayout() {
   }
 
   if (hasCachedUser) {
-    return <Navigate to="/app/today" replace />;
+    return <Navigate to={appRoutePaths.tasks.today} replace />;
   }
 
   if (isUnauthorizedError(currentUserQuery.error) || !currentUserQuery.data) {

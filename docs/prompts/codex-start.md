@@ -37,6 +37,8 @@ Git flow:
 
 Текущая версия:
 - v0.1: auth, tasks, Today view, Planning, Calendar, Archive, task drawers, deadline time, recurring tasks, date filters, adaptive UI.
+- v0.2 начинается с app structure refactor: task module живет под `/app/tasks/*`, а общий app shell не должен зависеть от todo-only структуры.
+- Следующий функциональный этап v0.2: личные проекты с Kanban/list views; drag-and-drop строится на `@dnd-kit/react` и `@dnd-kit/helpers`.
 - Не входят: notes, finance, AI/MCP implementation, reminders, mobile app, VPS deploy.
 
 Стек:

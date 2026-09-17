@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import { Link, useSearchParams } from "react-router";
 
+import { appRoutePaths } from "../app/route-paths";
 import type { CalendarTaskItem } from "../entities/task/types";
 import { useCalendarViewQuery } from "../features/calendar/queries";
 import { CreateTaskDrawer } from "../features/tasks/create-task-drawer";
@@ -188,7 +189,7 @@ function CalendarMoreLink({ date, count }: { date: string; count: number }) {
   return (
     <Link
       className="calendar-more"
-      to={`/app/planning?planned_date=${date}`}
+      to={`${appRoutePaths.tasks.planning}?planned_date=${date}`}
       onClick={(event) => event.stopPropagation()}
     >
       +{count} ещё
@@ -480,7 +481,7 @@ export function CalendarPage() {
                     {selectedUntimed.length > 2 ? (
                       <Link
                         className="calendar-side-more"
-                        to={`/app/planning?planned_date=${dateValue}`}
+                        to={`${appRoutePaths.tasks.planning}?planned_date=${dateValue}`}
                       >
                         +{selectedUntimed.length - 2} ещё
                       </Link>
@@ -504,7 +505,7 @@ export function CalendarPage() {
                     {selectedDeadlines.length > 3 ? (
                       <Link
                         className="calendar-side-more"
-                        to={`/app/planning?deadline_date=${dateValue}`}
+                        to={`${appRoutePaths.tasks.planning}?deadline_date=${dateValue}`}
                       >
                         +{selectedDeadlines.length - 3} ещё
                       </Link>
@@ -528,7 +529,7 @@ export function CalendarPage() {
                   <p className="calendar-selected-day__empty">На этот день задач нет.</p>
                 ) : null}
               </div>
-              <Link to={`/app/planning?planned_date=${dateValue}`}>Показать в планировании</Link>
+              <Link to={`${appRoutePaths.tasks.planning}?planned_date=${dateValue}`}>Показать в планировании</Link>
             </aside>
           </div>
         )}

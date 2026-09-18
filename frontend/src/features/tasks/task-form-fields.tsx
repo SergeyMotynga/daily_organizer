@@ -1,16 +1,19 @@
-import { Clock3 } from "lucide-react";
+import { useEffect } from "react";
+import { Clock3, Folder } from "lucide-react";
 import type { TaskRecurrenceType, TaskRecurrenceTypeCode, TaskStatus, TaskStatusCode } from "../../entities/task/types";
 import { formatCompactDate, getTodayValue, formatDateValue } from "../../shared/date-values";
 import { DatePickerPopover } from "../../shared/ui/date-picker-popover";
 import { RadioGroup, RadioGroupItem } from "../../shared/ui/radio-group";
 import { SelectCombobox } from "../../shared/ui/select-combobox";
 import { getRecurrenceLabel } from "./recurrence";
+import { useProjectQuery, useProjectsQuery } from "../projects/queries";
 
 type TaskFormFieldsProps = {
   title: string; description: string; status: TaskStatusCode;
   plannedDate: string; plannedTime: string; deadlineDate: string; deadlineTime: string;
   recurrenceType: TaskRecurrenceTypeCode; recurrenceInterval: number;
   recurrenceStartDate: string; recurrenceEndDate: string;
+  projectId: string; projectColumnId: string;
   titleError: string | null;
   statuses: TaskStatus[] | undefined; statusLoading: boolean; statusError: boolean;
   onRetryStatuses: () => void; recurrenceTypes: TaskRecurrenceType[];
@@ -21,6 +24,7 @@ type TaskFormFieldsProps = {
   onRecurrenceTypeChange: (value: TaskRecurrenceTypeCode) => void;
   onRecurrenceIntervalChange: (value: number) => void;
   onRecurrenceStartDateChange: (value: string) => void; onRecurrenceEndDateChange: (value: string) => void;
+  onProjectChange: (value: string) => void; onProjectColumnChange: (value: string) => void;
 };
 
 function DateField({ label, value, onChange, placeholder = "Выберите дату" }: { label: string; value: string; onChange: (value: string) => void; placeholder?: string }) {
@@ -35,6 +39,16 @@ function TimeField({ label, value, onChange }: { label: string; value: string; o
 }
 
 export function TaskFormFields(props: TaskFormFieldsProps) {
+  const projectsQuery = useProjectsQuery(false);
+  const projectQuery = useProjectQuery(props.projectId);
+  useEffect(() => {
+    if (!props.projectId || !projectQuery.data) return;
+    const currentExists = projectQuery.data.columns.some((column) => column.id === props.projectColumnId);
+    if (!currentExists) {
+      const firstColumn = projectQuery.data.columns.find((column) => !column.is_completion_column) ?? projectQuery.data.columns[0];
+      if (firstColumn) props.onProjectColumnChange(firstColumn.id);
+    }
+  }, [projectQuery.data, props]);
   const tomorrow = new Date(); tomorrow.setDate(tomorrow.getDate() + 1);
   const shortcuts = [{ label: "Сегодня", value: getTodayValue() }, { label: "Завтра", value: formatDateValue(tomorrow) }, { label: "Без даты", value: "" }];
   return <>
@@ -44,6 +58,14 @@ export function TaskFormFields(props: TaskFormFieldsProps) {
       {props.titleError ? <small id="task-form-title-error" className="task-create-field__error">{props.titleError}</small> : null}
     </label>
     <label className="task-create-field"><span>Описание</span><textarea value={props.description} onChange={(event) => props.onDescriptionChange(event.target.value)} placeholder="Краткое описание задачи (необязательно)" rows={3} /></label>
+    <fieldset className="task-create-fieldset">
+      <legend>Проект</legend>
+      <div className="task-project-inputs">
+        <label className="task-create-field"><span><Folder size={15} /> Проект</span><SelectCombobox label="Проект" value={props.projectId} onChange={(value) => { props.onProjectChange(value); if (!value) props.onProjectColumnChange(""); }} options={[{ value: "", label: "Без проекта" }, ...(projectsQuery.data?.items.map((project) => ({ value: project.id, label: project.title })) ?? [])]} /></label>
+        <label className="task-create-field"><span>Этап</span><SelectCombobox label="Этап проекта" value={props.projectColumnId} isDisabled={!props.projectId || projectQuery.isPending} onChange={props.onProjectColumnChange} options={(projectQuery.data?.columns ?? []).map((column) => ({ value: column.id, label: column.title, disabled: props.recurrenceType !== "none" && column.is_completion_column }))} /></label>
+      </div>
+      {props.projectId ? <small className="task-create-field__note">Задача также появится в планировании и календаре согласно выбранным датам.</small> : null}
+    </fieldset>
     {props.recurrenceType === "none" ? <fieldset className="task-create-fieldset">
       <legend>Статус</legend>
       {props.statusLoading ? <p className="task-create-fieldset__state">Загружаем статусы…</p> : null}

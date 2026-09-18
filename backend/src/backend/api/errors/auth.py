@@ -17,12 +17,12 @@ AUTH_ERROR_SPECS: dict[type[AuthError], ErrorSpec] = {
     LoginAlreadyExistsError: ErrorSpec(
         status_code=409,
         code="LOGIN_ALREADY_EXISTS",
-        message="Пользователь с таким login уже существует",
+        message="Пользователь с таким login уже существует. Login чувствителен к регистру",
     ),
     InvalidCredentialsError: ErrorSpec(
         status_code=401,
         code="INVALID_CREDENTIALS",
-        message="Неверный login или пароль",
+        message="Неверный login или пароль. Login и пароль чувствительны к регистру",
     ),
     InvalidOldPasswordError: ErrorSpec(
         status_code=401,

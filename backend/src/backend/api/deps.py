@@ -12,6 +12,7 @@ from backend.exceptions.auth import UnauthorizedError
 from backend.models.user import User
 from backend.repositories.users import UserRepository
 from backend.services.auth import AuthService
+from backend.services.projects import ProjectService
 from backend.services.tasks import TaskService
 
 ACCESS_COOKIE_NAME = "access_token"
@@ -29,6 +30,11 @@ def get_auth_service(
 def get_task_service(db: Annotated[AsyncSession, Depends(get_db)]) -> TaskService:
     """Создает TaskService для обработки запроса."""
     return TaskService(db)
+
+
+def get_project_service(db: Annotated[AsyncSession, Depends(get_db)]) -> ProjectService:
+    """Создает ProjectService для обработки запроса."""
+    return ProjectService(db)
 
 
 def get_access_token_cookie(

@@ -61,6 +61,9 @@ async def test_login_rejects_wrong_password(client: AsyncClient) -> None:
 
     assert response.status_code == 401
     assert response.json()["error"]["code"] == "INVALID_CREDENTIALS"
+    assert response.json()["error"]["message"] == (
+        "Неверный login или пароль. Login и пароль чувствительны к регистру"
+    )
 
 
 @pytest.mark.anyio

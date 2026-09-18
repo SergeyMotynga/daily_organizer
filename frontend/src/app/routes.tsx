@@ -11,6 +11,8 @@ import { LoginPage } from "../pages/login-page";
 import { PlanningPage } from "../pages/planning-page";
 import { RegisterPage } from "../pages/register-page";
 import { TodayPage } from "../pages/today-page";
+import { ProjectsPage } from "../pages/projects-page";
+import { ProjectPage } from "../pages/project-page";
 
 function LegacyTaskRouteRedirect({ to }: { to: string }) {
   const { search, hash } = useLocation();
@@ -37,6 +39,11 @@ export function AppRoutes() {
             <Route path="planning" element={<PlanningPage />} />
             <Route path="calendar" element={<CalendarPage />} />
             <Route path="archive" element={<ArchivePage />} />
+          </Route>
+          <Route path="projects">
+            <Route index element={<ProjectsPage />} />
+            <Route path=":projectId/board" element={<ProjectPage />} />
+            <Route path=":projectId/list" element={<ProjectPage />} />
           </Route>
           <Route path="today" element={<LegacyTaskRouteRedirect to={appRoutePaths.tasks.today} />} />
           <Route path="planning" element={<LegacyTaskRouteRedirect to={appRoutePaths.tasks.planning} />} />

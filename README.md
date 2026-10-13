@@ -11,8 +11,7 @@ Daily Organizer - pet-проект личного органайзера.
 - [Обзор проекта](docs/project.md)
 - [Daily Organizer v0.1](docs/version/v0.1/README.md)
 - [Черновой план v0.2](docs/version/v0.2/plan.md)
-- [Git flow](docs/development/git-flow.md)
-- [Стартовый промпт для Codex](docs/prompts/codex-start.md)
+- [Gitflow и доставка изменений](docs/development/git-flow.md)
 
 Подробные продуктовые документы не дублируются в репозитории. Источник истины:
 
@@ -32,9 +31,9 @@ Daily Organizer - pet-проект личного органайзера.
 
 - `main` - стабильная production-ветка.
 - `develop` - интеграционная рабочая ветка.
-- разработка идет только в feature/fix/chore/docs/test/refactor ветках от `develop`.
+- обычная разработка идёт в отдельных рабочих ветках от актуальной `develop`, с доставкой через PR в `develop`.
 
-Подробности: [Git flow](docs/development/git-flow.md).
+Именование веток, проверки и разрешения доставки: [Gitflow и доставка изменений](docs/development/git-flow.md).
 
 ## Локальный запуск
 

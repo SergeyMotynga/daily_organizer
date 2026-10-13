@@ -7,9 +7,8 @@
 - [Обзор проекта](project.md)
 - [Daily Organizer v0.1](version/v0.1/README.md)
 - [Черновой план v0.2](version/v0.2/plan.md)
-- [Git flow и commit flow](development/git-flow.md)
+- [Gitflow и доставка изменений](development/git-flow.md)
 - [Правила работы с Codex](development/codex-working-rules.md)
-- [Стартовый промпт для Codex](prompts/codex-start.md)
 
 ## Источник истины
 

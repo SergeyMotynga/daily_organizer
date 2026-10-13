@@ -482,26 +482,13 @@ export function PlanningPage() {
         <div className="planning-toolbar">
           <div className="planning-filter planning-filter--presets">
             <span className="planning-filter__label">Быстрые фильтры</span>
-            <div className="planning-filter__control-row">
-              <div className="planning-preset-options">
-                {presets.map((option) => (
-                  <button
-                    className={
-                      !plannedDate && !hasPlannedRange && preset === option.value
-                        ? "planning-option--active"
-                        : undefined
-                    }
-                    type="button"
-                    key={option.value}
-                    aria-pressed={!plannedDate && !hasPlannedRange && preset === option.value}
-                    onClick={() => changePreset(option.value)}
-                  >
-                    {option.label}
-                  </button>
-                ))}
-              </div>
-
-            </div>
+            <SelectCombobox
+              className="planning-preset-select"
+              label="Быстрые фильтры"
+              value={preset}
+              options={presets}
+              onChange={(value) => changePreset(value as TaskListPreset)}
+            />
           </div>
 
           <div className="planning-filter planning-filter--statuses">

@@ -5,7 +5,7 @@ tasks:
     desc: Run backend locally
     dir: backend
     cmds:
-      - uv run uvicorn backend.main:app --reload
+      - uv run uvicorn backend.main:app --reload --reload-dir src --app-dir src
 
   backend:test:
     desc: Run backend tests

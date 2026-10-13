@@ -26,15 +26,10 @@ services:
       dockerfile: Dockerfile
     image: daily_organizer_backend:latest
     container_name: daily_organizer_backend
+    env_file:
+      - .env
     environment:
-      APP_ENV: local
-      APP_DEBUG: "true"
       DATABASE_URL: postgresql+asyncpg://daily_organizer:daily_organizer@postgres:5432/daily_organizer
-      JWT_ACCESS_TOKEN_TTL_MINUTES: "30"
-      JWT_REFRESH_TOKEN_TTL_DAYS: "30"
-      JWT_SECRET_KEY: change-me-in-local-env
-      COOKIE_SECURE: "false"
-      COOKIE_SAMESITE: lax
     ports:
       - "127.0.0.1:8000:8000"
     depends_on:

@@ -137,33 +137,36 @@ button svg, a svg { flex-shrink: 0; }
 .task-project-inputs { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
 .task-project-inputs .task-create-field > span { display: flex; align-items: center; gap: 5px; }
 .task-project-inputs .ui-combobox, .task-project-inputs .ui-combobox__control { width: 100%; }
-.project-toolbar { display: grid; grid-template-columns: auto minmax(220px,1fr); align-items: center; gap: 8px 12px; flex-shrink: 0; }
+.project-toolbar { display: grid; grid-template-columns: auto minmax(220px,1fr) auto; align-items: center; gap: 12px; overflow-x: auto; padding-bottom: 4px; flex-shrink: 0; }
 .project-view-switch { margin: 0; }
 .project-toolbar .projects-search { width: 100%; max-width: none; flex: none; }
-.project-toolbar__filters { grid-column: 1 / -1; display: flex; align-items: center; gap: 8px; }
+.project-toolbar__filters { display: flex; align-items: center; gap: 8px; }
 .project-toolbar__filters > .ui-combobox { width: 150px; }
 .project-date-filter { width: 200px; display: grid; grid-template-columns: minmax(0,1fr) 40px; gap: 6px; }
 .project-date-filter > .ui-combobox { width: 100%; }
 .project-date-picker, .project-date-picker .date-picker__trigger { width: 40px; height: 40px; }
 .project-date-picker .date-picker__label, .project-date-picker .date-picker__trigger span, .project-date-picker .date-picker__trigger svg:last-child { display: none; }
 .project-date-picker .date-picker__trigger { justify-content: center; padding: 0; }
-.project-board { min-height: 0; flex: 1; display: flex; align-items: stretch; gap: 12px; overflow-x: auto; overflow-y: hidden; padding-bottom: 6px; }
+.project-page > [data-dnd-overlay] { position: fixed; }
+.project-board { min-height: 0; flex: 1 1 0; display: flex; align-items: stretch; gap: 12px; overflow-x: auto; overflow-y: hidden; padding-bottom: 6px; }
 .project-board__error { padding: 10px 14px; border: 1px solid #ffd0d7; border-radius: 7px; color: var(--danger); background: #fff7f8; font-size: 13px; }
-.project-column { width: 285px; min-width: 285px; min-height: 420px; display: flex; flex-direction: column; overflow: hidden; border: 1px solid #e3eaf4; border-radius: 10px; background: linear-gradient(#f4f7fb,#f9fbfd); }
+.project-column { width: 285px; min-width: 285px; min-height: 0; display: flex; flex-direction: column; overflow: hidden; border: 1px solid #e3eaf4; border-radius: 10px; background: linear-gradient(#f4f7fb,#f9fbfd); }
 .project-column--1 { background: linear-gradient(#eef6ff,#f8fbff); }
 .project-column--2 { background: linear-gradient(#f0f5ff,#fafbff); }
 .project-column--3 { background: linear-gradient(#fff8e9,#fffdf8); }
 .project-column--4 { background: linear-gradient(#ebfbf2,#f8fdf9); }
 .project-column--over { box-shadow: inset 0 0 0 2px var(--primary); }
-.project-column > header { min-height: 48px; padding: 0 13px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid #e3eaf4; }
+.project-column > header { min-height: 48px; flex-shrink: 0; padding: 0 13px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid #e3eaf4; }
 .project-column > header h2 { margin: 0; font-size: 15px; }
 .project-column > header h2 span { margin-left: 5px; padding: 2px 7px; border-radius: 20px; color: var(--primary); background: #dfebff; font-size: 12px; }
-.project-column__tasks { min-height: 84px; flex: 1; overflow-y: auto; padding: 8px; display: flex; flex-direction: column; gap: 8px; }
+.project-column__tasks { min-height: 0; flex: 1 1 0; overflow-y: auto; padding: 8px; display: flex; flex-direction: column; gap: 8px; }
 .project-column__empty { min-height: 70px; display: grid; place-items: center; border: 1px dashed #b9cae2; border-radius: 8px; color: var(--muted); font-size: 12px; }
-.project-column__add { min-height: 44px; padding: 0 14px; display: flex; align-items: center; gap: 8px; border: 0; border-radius: 0; color: var(--primary); background: transparent; font-size: 14px; }
-.project-task-card { position: relative; min-height: 90px; display: grid; grid-template-columns: minmax(0,1fr) 28px; border: 1px solid #dce5f1; border-radius: 8px; background: white; box-shadow: 0 2px 5px #12224608; }
-.project-task-card--dragging { opacity: .35; }
-.project-task-card--overlay { width: 260px; padding: 16px; display: grid; gap: 10px; color: var(--text); box-shadow: 0 16px 35px #1222462c; transform: rotate(-2deg); }
+.project-column__add { min-height: 44px; flex-shrink: 0; padding: 0 14px; display: flex; align-items: center; gap: 8px; border: 0; border-radius: 0; color: var(--primary); background: transparent; font-size: 14px; }
+.project-task-card { position: relative; min-height: 90px; flex-shrink: 0; display: grid; grid-template-columns: minmax(0,1fr) 28px; border: 1px solid #dce5f1; border-radius: 8px; background: white; box-shadow: 0 2px 5px #12224608; transition: box-shadow 180ms ease; }
+.project-task-card--dragging, .project-task-card--dropping { opacity: 0; }
+.project-task-card--overlay { width: 260px; padding: 16px; display: grid; gap: 10px; color: var(--text); opacity: 1; box-shadow: 0 16px 35px #1222462c; transform-origin: right center; animation: project-task-pickup 180ms cubic-bezier(.2,.8,.2,1.08) both; }
+.project-task-card--overlay.project-task-card--dropping { opacity: 1; animation: none; transform: rotate(0) scale(.99); transition: transform 280ms cubic-bezier(.2,.75,.2,1), box-shadow 280ms ease; box-shadow: 0 6px 14px #12224618; }
+@keyframes project-task-pickup { from { opacity: 0; transform: rotate(0) scale(.96); box-shadow: 0 3px 8px #12224610; } to { opacity: 1; transform: rotate(-1.5deg) scale(1.015); box-shadow: 0 16px 35px #1222462c; } }
 .project-task-card__content { padding: 11px 4px 11px 12px; display: grid; align-content: start; gap: 8px; text-align: left; border: 0; background: transparent; }
 .project-task-card__content strong { font-size: 13px; line-height: 1.35; }
 .project-task-card__content span { display: flex; align-items: center; gap: 7px; color: #4262a0; font-size: 12px; }
@@ -217,6 +220,7 @@ button svg, a svg { flex-shrink: 0; }
 @media (max-width: 1050px) {
   .projects-grid { grid-template-columns: minmax(0,480px); }
   .project-column { min-width: 270px; }
+  .project-toolbar { grid-template-columns: auto 220px auto; }
 }
 @media (max-width: 760px) {
   .projects-page, .project-page { gap: 16px; }
@@ -236,7 +240,7 @@ button svg, a svg { flex-shrink: 0; }
   .project-toolbar__filters { grid-column: 1; overflow-x: auto; padding-bottom: 4px; }
   .project-toolbar__filters > .ui-combobox { min-width: 150px; }
   .project-date-filter { min-width: 200px; }
-  .project-board { min-height: 480px; }
+  .project-board { min-height: 0; }
   .project-list-panel { min-height: 480px; }
   .project-list-bulk { overflow-x: auto; }
   .project-list-pagination { align-items: flex-start; flex-direction: column; }
@@ -245,6 +249,7 @@ button svg, a svg { flex-shrink: 0; }
 .app-shell__logout { display: flex; align-items: center; gap: 12px; border: 0; padding: 12px; width: 100%; background: var(--primary); color: white; }
 .app-shell__logout:hover:not(:disabled) { background: #0056e5; }
 .app-shell__content { min-width: 0; min-height: 0; padding: 34px 34px 32px; overflow: hidden; }
+.app-shell__content:has(> .project-page) { padding-bottom: 16px; }
 .today-page, .planning-page, .archive-page { height: 100%; min-height: 0; display: flex; flex-direction: column; }
 .today-page__header, .planning-page__header, .archive-page__header, .today-summary, .planning-toolbar, .archive-toolbar { flex-shrink: 0; }
 /* Заголовки и кнопки */
@@ -368,21 +373,16 @@ button svg, a svg { flex-shrink: 0; }
 .today-compact-card__more { display: inline-block; margin-top: 16px; font-size: 13px; }
 .today-compact-card__empty { font-size: 13px; color: var(--muted); }
 /* Фильтры и таблицы */
-.planning-toolbar { display: grid; grid-template-columns: 314px 204px 210px minmax(100px,1fr) minmax(142px,1fr); margin-bottom: 0; }
-.planning-filter { border: 1px solid var(--border); border-radius: 9px; padding: 14px 8px; min-width: 0; height: 96px; display: flex; flex-direction: column; justify-content: center; gap: 10px; font-size: 12px; color: var(--secondary); }
+.planning-toolbar { display: grid; grid-template-columns: minmax(170px,.8fr) 204px 210px minmax(180px,1.1fr) minmax(210px,1fr); gap: 8px; overflow-x: auto; padding-bottom: 4px; margin-bottom: 0; }
+.planning-filter { border: 1px solid var(--border); border-radius: 9px; padding: 14px 12px; min-width: 0; height: 96px; display: flex; flex-direction: column; justify-content: center; gap: 10px; font-size: 12px; color: var(--secondary); }
 .planning-filter--presets { grid-column: 1; grid-row: 1; }
 .planning-filter--statuses { grid-column: 3; grid-row: 1; }
 .planning-search { grid-column: 4; grid-row: 1; }
 .planning-sort { grid-column: 5; grid-row: 1; }
-.planning-filter + .planning-filter { margin-left: -1px; }
-.planning-filter__control-row { display: flex; gap: 8px; align-items: center; }
-.planning-preset-options { display: flex; gap: 4px; }
-.planning-preset-options button, .task-date-shortcuts button { padding: 10px 9px; white-space: nowrap; font-size: 13px; }
-.planning-preset-options button { padding: 10px 3px; }
-.planning-preset-options button, .planning-status-options label, .planning-date-options .date-picker__trigger, .planning-search input, .planning-sort .ui-combobox { font-size: 13px; font-weight: 400; }
-.planning-filter--presets { position: relative; }
-.planning-option--active, .task-date-shortcut--active, .calendar-view-switch__active { color: var(--primary); border-color: var(--primary); background: #f5faff; }
-.planning-option--active:hover:not(:disabled), .task-date-shortcut--active:hover:not(:disabled), .calendar-view-switch__active:hover:not(:disabled) { background: #deebff; color: #0056e5; }
+.task-date-shortcuts button { padding: 10px 9px; white-space: nowrap; font-size: 13px; }
+.planning-status-options label, .planning-date-options .date-picker__trigger, .planning-search input, .planning-sort .ui-combobox { font-size: 13px; font-weight: 400; }
+.task-date-shortcut--active, .calendar-view-switch__active { color: var(--primary); border-color: var(--primary); background: #f5faff; }
+.task-date-shortcut--active:hover:not(:disabled), .calendar-view-switch__active:hover:not(:disabled) { background: #deebff; color: #0056e5; }
 .planning-date-filter { grid-column: 2; grid-row: 1; align-items: stretch; }
 .planning-date-options { display: flex; gap: 6px; min-width: 0; height: 40px; }
 .planning-date-options .date-picker { flex: 1; min-width: 0; }
@@ -394,7 +394,7 @@ button svg, a svg { flex-shrink: 0; }
 .planning-status-options { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; height: 40px; }
 .planning-status-options label { display: inline-flex; align-items: center; gap: 6px; color: var(--text); }
 .planning-search > span:first-child { display: block; }
-.planning-filter__control-row, .planning-preset-options, .planning-search__control { height: 40px; flex-shrink: 0; }
+.planning-search__control { height: 40px; flex-shrink: 0; }
 .ui-input-group { container-type: inline-size; position: relative; display: flex; align-items: center; gap: 8px; min-width: 0; height: 40px; border: 1px solid var(--border); border-radius: 7px; padding: 0 10px; background: white; color: var(--muted); box-shadow: 0 1px 2px #10132905; }
 .ui-input-group:focus-within { border-color: #7cafff; outline: 2px solid #bdd5ff; outline-offset: 1px; }
 .ui-input-group__input { flex: 1; min-width: 0; width: 100%; padding: 10px 0; font-size: 13px; border: 0; background: transparent; box-shadow: none; }
@@ -525,7 +525,8 @@ button svg, a svg { flex-shrink: 0; }
 .calendar-all-day { padding: 12px; min-height: 120px; border-bottom: 1px solid var(--border); font-size: 12px; }
 .calendar-lane-label { color: var(--muted); display: block; margin-bottom: 8px; }
 .calendar-timed-items { padding: 12px 8px; display: grid; gap: 8px; align-content: start; }
-.calendar-item { background: #eaf3ff; border: 0; border-radius: 7px; padding: 10px 8px; width: 100%; display: flex; align-items: flex-start; gap: 5px; text-align: left; color: var(--text); font-size: 12px; line-height: 1.6; min-width: 0; }
+.calendar-item { background: #eaf3ff; border: 0; border-radius: 7px; padding: 10px 8px; width: 100%; display: flex; align-items: flex-start; gap: 5px; text-align: left; color: var(--text); font-size: 12px; line-height: 1.6; min-width: 0; transition: background-color 150ms ease; }
+.calendar-item:hover:not(:disabled) { background: #d7e6ff; }
 .calendar-item > svg { display: none; }
 .calendar-item__content { min-width: 0; display: block; }
 .calendar-item__title { overflow-wrap: anywhere; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
@@ -534,6 +535,7 @@ button svg, a svg { flex-shrink: 0; }
 .calendar-item__recurrence-label { color: var(--muted); display: block; margin-top: 5px; }
 .calendar-item__recurrence-label::before { content: '↻'; font-size: 17px; margin-right: 7px; }
 .calendar-item--deadline { background: #fff0f3; color: var(--danger); }
+.calendar-item--deadline:hover:not(:disabled) { background: #ffdce4; }
 .calendar-item--deadline .calendar-item__time { color: var(--danger); }
 .calendar-item__eyebrow { display: block; }
 .calendar-item--done { opacity: .55; }
@@ -551,6 +553,8 @@ button svg, a svg { flex-shrink: 0; }
 .calendar-month-day { overflow: hidden; }
 .calendar-month-day__items { gap: 3px; }
 .calendar-month .calendar-item { padding: 0; background: transparent; font-size: 11px; border-radius: 0; line-height: 1.35; }
+.calendar-month .calendar-item:hover:not(:disabled) { background: #d7e6ff; }
+.calendar-month .calendar-item--deadline:hover:not(:disabled) { background: #ffdce4; }
 .calendar-month .calendar-item__main { display: flex; gap: 4px; white-space: nowrap; }
 .calendar-month .calendar-item__content { width: 100%; overflow: hidden; }
 .calendar-month .calendar-item__title { min-width: 0; }
@@ -754,8 +758,7 @@ button svg, a svg { flex-shrink: 0; }
   .app-shell__brand { font-size: 17px; gap: 8px; }
   .app-shell__brand .brand-mark { width: 32px; height: 32px; }
   .app-shell__content { padding: 30px; }
-  .planning-toolbar { column-gap: 0; }
-  .planning-preset-options { gap: 4px; }
+  .planning-toolbar { grid-template-columns: 180px 204px 210px minmax(180px,1fr) 220px; }
   .today-board { grid-template-columns: minmax(0,1fr) 270px; gap: 20px; }
   .today-summary { gap: 14px; }
   .today-summary-card { padding: 18px; }
@@ -767,17 +770,7 @@ button svg, a svg { flex-shrink: 0; }
   .calendar-month-day { padding: 8px; }
   .auth-page--login .auth-page__stage { gap: 70px; max-width: 920px; }
 }
-@media (max-width: 1230px) {
-  .planning-toolbar { grid-template-columns: minmax(0,1fr) minmax(0,1fr); gap: 8px; }
-  .planning-filter--presets { grid-column: 1 / -1; grid-row: auto; }
-  .planning-date-filter, .planning-filter--statuses, .planning-search, .planning-sort { grid-column: auto; grid-row: auto; }
-  .planning-filter + .planning-filter { margin-left: 0; }
-}
 @media (max-width: 1050px) {
-  .planning-toolbar { grid-template-columns: minmax(0,1fr) minmax(0,1fr); gap: 8px; }
-  .planning-filter--presets { grid-column: 1 / -1; grid-row: auto; }
-  .planning-date-filter, .planning-filter--statuses, .planning-search, .planning-sort { grid-column: auto; grid-row: auto; }
-  .planning-filter + .planning-filter { margin-left: 0; }
   .app-shell { --sidebar-width: 220px; }
   .app-shell__brand { font-size: 15px; }
   .app-shell__brand .version-badge { display: none; }
@@ -845,13 +838,13 @@ button svg, a svg { flex-shrink: 0; }
   .today-task-list { padding: 0 12px; }
   .today-group__sort .ui-combobox { width: 130px; }
   .planning-toolbar { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-  .planning-filter--presets { grid-column: 1 / -1; }
+  .planning-filter--presets { grid-column: 1 / -1; grid-row: auto; }
+  .planning-filter--statuses { grid-column: auto; grid-row: auto; }
   .planning-filter { height: 76px; }
-  .planning-search { grid-column: 1 / -1; height: 76px; }
-  .planning-date-filter { grid-column: 1 / -1; }
+  .planning-search { grid-column: 1 / -1; grid-row: auto; height: 76px; }
+  .planning-date-filter { grid-column: 1 / -1; grid-row: auto; }
   .planning-sort { grid-column: auto; grid-row: auto; }
   .planning-filter { padding: 12px; }
-  .planning-preset-options { flex-wrap: wrap; }
   .planning-pagination, .archive-pagination { flex-wrap: wrap; }
   .archive-toolbar { flex-wrap: wrap; }
   .archive-search, .archive-sort, .archive-sort .ui-combobox { width: 100%; }
@@ -881,4 +874,6 @@ button svg, a svg { flex-shrink: 0; }
   .task-drawer, .task-drawer-backdrop { animation: none; }
   .app-shell__mobile-overlay { transition: none; }
   .ui-radio__indicator, .ui-radio__indicator > span, .task-status-option { transition: none; }
+  .project-task-card, .calendar-item { transition: none; }
+  .project-task-card--dropping, .project-task-card--overlay, .project-task-card--overlay.project-task-card--dropping { animation: none; }
 }

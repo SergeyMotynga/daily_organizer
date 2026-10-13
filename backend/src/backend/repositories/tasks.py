@@ -89,6 +89,9 @@ class TaskRepository:
             recurrence_interval=data.recurrence_interval,
             recurrence_start_date=data.recurrence_start_date,
             recurrence_end_date=data.recurrence_end_date,
+            project_id=data.project_id,
+            project_column_id=data.project_column_id,
+            project_position=data.project_position,
         )
         self.db.add(task)
         await self.db.flush()
@@ -331,7 +334,10 @@ class TaskRepository:
             if filters.planned_date_to is not None:
                 regular_conditions.append(Task.planned_date <= filters.planned_date_to)
 
-        if filters.recurrence_date is not None:
+        task_context_filter: ColumnElement[bool]
+        if filters.project_id is not None:
+            task_context_filter = Task.status_code.in_(status_values)
+        elif filters.recurrence_date is not None:
             completion_exists = exists().where(
                 TaskRecurrenceCompletion.task_id == Task.id,
                 TaskRecurrenceCompletion.occurrence_date == filters.recurrence_date,
@@ -366,6 +372,9 @@ class TaskRepository:
             task_context_filter,
             Task.archived_at.is_not(None) if filters.archived else Task.archived_at.is_(None),
         )
+
+        if filters.project_id is not None:
+            statement = statement.where(Task.project_id == filters.project_id)
 
         if filters.deadline_date is not None:
             statement = statement.where(Task.deadline_date == filters.deadline_date)

@@ -62,6 +62,8 @@ class TaskCreateRequest(BaseModel):
     recurrence_start_date: date | None = None
     recurrence_end_date: date | None = None
     status: TaskStatusCode | None = None
+    project_id: UUID | None = None
+    project_column_id: UUID | None = None
 
     _trim_title = field_validator("title")(trim_text)
     _normalize_description = field_validator("description")(normalize_description)
@@ -98,6 +100,8 @@ class TaskUpdateRequest(BaseModel):
     recurrence_end_date: date | None = None
     status: TaskStatusCode | None = None
     archived: bool = False
+    project_id: UUID | None = None
+    project_column_id: UUID | None = None
 
     _trim_title = field_validator("title")(trim_text)
     _normalize_description = field_validator("description")(normalize_description)
@@ -126,6 +130,9 @@ class TaskResponse(BaseModel):
     recurrence_interval: int
     recurrence_start_date: date | None
     recurrence_end_date: date | None
+    project_id: UUID | None
+    project_column_id: UUID | None
+    project_position: int | None
     occurrence_date: date | None = None
     completed_at: datetime | None
     archived_at: datetime | None

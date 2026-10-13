@@ -6,14 +6,16 @@ from uuid import UUID
 
 from fastapi import APIRouter, Depends, Query, status
 
-from backend.api.deps import get_current_user, get_task_service
+from backend.api.deps import get_current_user, get_project_service, get_task_service
 from backend.api.query_params import normalize_optional_query_text, parse_csv_enum
 from backend.domain.tasks import TaskDeadlinePreset, TaskListPreset, TaskSort, TaskStatusCode
 from backend.dto.common import PaginationParams
+from backend.dto.projects import TaskMoveData
 from backend.dto.tasks import TaskCreateData, TaskListQuery, TaskUpdateData
 from backend.models.task import Task, TaskRecurrenceCompletion
 from backend.models.user import User
 from backend.schemas.common import PaginationMeta
+from backend.schemas.projects import TaskMoveRequest
 from backend.schemas.tasks import (
     TaskCreateRequest,
     TaskListResponse,
@@ -21,6 +23,7 @@ from backend.schemas.tasks import (
     TaskResponse,
     TaskUpdateRequest,
 )
+from backend.services.projects import ProjectService
 from backend.services.tasks import TaskService
 
 router = APIRouter(prefix="/api/v1/tasks", tags=["tasks"])
@@ -47,6 +50,8 @@ async def create_task(
             recurrence_start_date=payload.recurrence_start_date,
             recurrence_end_date=payload.recurrence_end_date,
             status=payload.status,
+            project_id=payload.project_id,
+            project_column_id=payload.project_column_id,
         ),
     )
 
@@ -66,6 +71,7 @@ async def list_tasks(
     timezone: Annotated[str, Query(min_length=1, max_length=255)] = "UTC",
     q: Annotated[str | None, Query()] = None,
     sort: Annotated[TaskSort, Query()] = TaskSort.created_at_desc,
+    project_id: Annotated[UUID | None, Query()] = None,
     limit: Annotated[int, Query(ge=1, le=100)] = 50,
     offset: Annotated[int, Query(ge=0)] = 0,
 ) -> TaskListResponse:
@@ -84,6 +90,7 @@ async def list_tasks(
             timezone=timezone,
             q=normalize_optional_query_text(q),
             sort=sort,
+            project_id=project_id,
         ),
         pagination=PaginationParams(limit=limit, offset=offset),
     )
@@ -133,6 +140,27 @@ async def update_task(
             recurrence_end_date=payload.recurrence_end_date,
             status=payload.status,
             archived=payload.archived,
+            project_id=payload.project_id,
+            project_column_id=payload.project_column_id,
+        ),
+    )
+
+
+@router.post("/{task_id}/move", response_model=TaskResponse)
+async def move_task(
+    task_id: UUID,
+    payload: TaskMoveRequest,
+    current_user: Annotated[User, Depends(get_current_user)],
+    project_service: Annotated[ProjectService, Depends(get_project_service)],
+) -> Task:
+    """Атомарно перемещает карточку внутри проектной доски."""
+    return await project_service.move_task(
+        user=current_user,
+        task_id=task_id,
+        data=TaskMoveData(
+            project_id=payload.project_id,
+            target_column_id=payload.target_column_id,
+            target_position=payload.target_position,
         ),
     )
 

@@ -11,6 +11,7 @@ from sqlalchemy.types import Uuid
 from backend.db.base import Base
 
 if TYPE_CHECKING:
+    from backend.models.project import Project
     from backend.models.task import Task
 
 
@@ -42,6 +43,10 @@ class User(Base):
         cascade="all, delete-orphan",
     )
     tasks: Mapped[list["Task"]] = relationship(
+        back_populates="user",
+        cascade="all, delete-orphan",
+    )
+    projects: Mapped[list["Project"]] = relationship(
         back_populates="user",
         cascade="all, delete-orphan",
     )

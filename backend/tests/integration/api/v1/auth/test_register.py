@@ -80,3 +80,6 @@ async def test_register_rejects_duplicate_login(client: AsyncClient) -> None:
     assert first_response.status_code == 201
     assert second_response.status_code == 409
     assert second_response.json()["error"]["code"] == "LOGIN_ALREADY_EXISTS"
+    assert second_response.json()["error"]["message"] == (
+        "Пользователь с таким login уже существует. Login чувствителен к регистру"
+    )

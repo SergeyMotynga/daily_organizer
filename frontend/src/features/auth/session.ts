@@ -58,8 +58,9 @@ export function getAuthErrorMessage(error: unknown): string {
   }
 
   const messagesByCode: Record<string, string> = {
-    INVALID_CREDENTIALS: "Неверный login или пароль.",
-    LOGIN_ALREADY_EXISTS: "Пользователь с таким login уже существует.",
+    INVALID_CREDENTIALS: "Неверный login или пароль. Login и пароль чувствительны к регистру.",
+    LOGIN_ALREADY_EXISTS:
+      "Пользователь с таким login уже существует. Login чувствителен к регистру.",
     WEAK_PASSWORD: "Пароль должен быть 8-30 символов, с латинской буквой и цифрой, без пробелов."
   };
 

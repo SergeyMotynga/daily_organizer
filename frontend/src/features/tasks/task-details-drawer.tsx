@@ -5,6 +5,7 @@ import {
   CalendarDays,
   CheckCircle2,
   Clock3,
+  Folder,
   Pencil,
   Repeat2,
   RotateCcw,
@@ -14,6 +15,7 @@ import {
 
 import type { TaskStatusCode } from "../../entities/task/types";
 import { useTodayViewQuery } from "../today/queries";
+import { useProjectQuery } from "../projects/queries";
 import { EditTaskDrawer } from "./edit-task-drawer";
 import { isComboboxHandlingEscape, useTaskDrawerTransition } from "./task-drawer-transition";
 import {
@@ -68,6 +70,7 @@ function formatDateTime(date: string | null): string {
 export function TaskDetailsDrawer({ taskId, onClose: onDismiss }: TaskDetailsDrawerProps) {
   const { onClose, isClosing } = useTaskDrawerTransition(onDismiss);
   const taskQuery = useTaskQuery(taskId);
+  const projectQuery = useProjectQuery(taskQuery.data?.project_id ?? "");
   const todayViewQuery = useTodayViewQuery();
   const statusesQuery = useTaskStatusesQuery();
   const updateTaskMutation = useUpdateTaskMutation();
@@ -239,6 +242,7 @@ export function TaskDetailsDrawer({ taskId, onClose: onDismiss }: TaskDetailsDra
                     </span>
                   </dd>
                 </div>
+                {task.project_id ? <div><dt><Folder size={18} aria-hidden="true" />Проект</dt><dd>{projectQuery.data?.title ?? "Загружаем…"} · {projectQuery.data?.columns.find((column) => column.id === task.project_column_id)?.title ?? "Этап"}</dd></div> : null}
                 <div>
                   <dt>
                     <CalendarDays size={18} aria-hidden="true" />

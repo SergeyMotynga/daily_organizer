@@ -58,6 +58,10 @@ export function getTasks(params: TaskListParams): Promise<TaskListResponse> {
     searchParams.set("timezone", params.timezone);
   }
 
+  if (params.project_id) {
+    searchParams.set("project_id", params.project_id);
+  }
+
   if (params.q.trim()) {
     searchParams.set("q", params.q.trim());
   }

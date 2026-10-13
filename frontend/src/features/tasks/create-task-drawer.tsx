@@ -13,9 +13,11 @@ import { isComboboxHandlingEscape, useTaskDrawerTransition } from "./task-drawer
 
 type CreateTaskDrawerProps = {
   onClose: () => void;
+  initialProjectId?: string;
+  initialProjectColumnId?: string;
 };
 
-export function CreateTaskDrawer({ onClose: onDismiss }: CreateTaskDrawerProps) {
+export function CreateTaskDrawer({ onClose: onDismiss, initialProjectId = "", initialProjectColumnId = "" }: CreateTaskDrawerProps) {
   const { onClose, isClosing } = useTaskDrawerTransition(onDismiss);
   const statusesQuery = useTaskStatusesQuery();
   const recurrenceTypesQuery = useTaskRecurrenceTypesQuery();
@@ -31,6 +33,8 @@ export function CreateTaskDrawer({ onClose: onDismiss }: CreateTaskDrawerProps) 
   const [recurrenceInterval, setRecurrenceInterval] = useState(1);
   const [recurrenceStartDate, setRecurrenceStartDate] = useState("");
   const [recurrenceEndDate, setRecurrenceEndDate] = useState("");
+  const [projectId, setProjectId] = useState(initialProjectId);
+  const [projectColumnId, setProjectColumnId] = useState(initialProjectColumnId);
   const [titleError, setTitleError] = useState<string | null>(null);
   const [scheduleError, setScheduleError] = useState<string | null>(null);
   const hasDateWarning = Boolean(plannedDate && deadlineDate && plannedDate > deadlineDate);
@@ -92,7 +96,9 @@ export function CreateTaskDrawer({ onClose: onDismiss }: CreateTaskDrawerProps) 
         recurrence_type_code: recurrenceType,
         recurrence_interval: recurrenceType === "weekdays" ? 1 : recurrenceInterval,
         recurrence_start_date: recurrenceType === "none" ? null : recurrenceStartDate || null,
-        recurrence_end_date: recurrenceType === "none" ? null : recurrenceEndDate || null
+        recurrence_end_date: recurrenceType === "none" ? null : recurrenceEndDate || null,
+        project_id: projectId || null,
+        project_column_id: projectId ? projectColumnId || null : null
       });
       onClose();
     } catch {
@@ -136,6 +142,7 @@ export function CreateTaskDrawer({ onClose: onDismiss }: CreateTaskDrawerProps) 
                 plannedDate={plannedDate} plannedTime={plannedTime} deadlineDate={deadlineDate} deadlineTime={deadlineTime}
                 recurrenceType={recurrenceType} recurrenceInterval={recurrenceInterval}
                 recurrenceStartDate={recurrenceStartDate} recurrenceEndDate={recurrenceEndDate}
+                projectId={projectId} projectColumnId={projectColumnId}
                 titleError={titleError} statuses={statusesQuery.data} statusLoading={statusesQuery.isPending} statusError={statusesQuery.isError}
                 onRetryStatuses={() => void statusesQuery.refetch()} recurrenceTypes={recurrenceTypes}
                 onTitleChange={(value) => { setTitle(value); setTitleError(null); }} onDescriptionChange={setDescription} onStatusChange={setStatus}
@@ -146,6 +153,7 @@ export function CreateTaskDrawer({ onClose: onDismiss }: CreateTaskDrawerProps) 
                 onRecurrenceIntervalChange={setRecurrenceInterval}
                 onRecurrenceStartDateChange={(value) => { setRecurrenceStartDate(value); setScheduleError(null); }}
                 onRecurrenceEndDateChange={setRecurrenceEndDate}
+                onProjectChange={setProjectId} onProjectColumnChange={setProjectColumnId}
               />
 
             {scheduleError ? (

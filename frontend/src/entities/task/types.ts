@@ -14,6 +14,9 @@ export type Task = {
   recurrence_interval: number;
   recurrence_start_date: string | null;
   recurrence_end_date: string | null;
+  project_id: string | null;
+  project_column_id: string | null;
+  project_position: number | null;
   occurrence_date: string | null;
   completed_at: string | null;
   archived_at: string | null;
@@ -64,6 +67,7 @@ export type TaskListParams = {
   sort: TaskSort;
   limit: number;
   offset: number;
+  project_id?: string;
 };
 
 export type TaskListResponse = {
@@ -87,6 +91,8 @@ export type CreateTaskPayload = {
   recurrence_interval: number;
   recurrence_start_date: string | null;
   recurrence_end_date: string | null;
+  project_id?: string | null;
+  project_column_id?: string | null;
 };
 
 export type UpdateTaskPayload = Partial<CreateTaskPayload> & {

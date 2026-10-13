@@ -10,9 +10,11 @@ from starlette.exceptions import HTTPException as StarletteHTTPException
 from starlette.types import ExceptionHandler
 
 from backend.api.errors.auth import AUTH_ERROR_SPECS
+from backend.api.errors.projects import PROJECT_ERROR_SPECS
 from backend.api.errors.responses import ErrorSpec, build_error_response
 from backend.api.errors.tasks import TASK_ERROR_SPECS
 from backend.exceptions.auth import AuthError
+from backend.exceptions.projects import ProjectError
 from backend.exceptions.tasks import TaskError
 
 
@@ -41,6 +43,7 @@ def make_domain_error_handler[ErrorT: Exception](
 
 auth_error_handler = make_domain_error_handler(AUTH_ERROR_SPECS)
 task_error_handler = make_domain_error_handler(TASK_ERROR_SPECS)
+project_error_handler = make_domain_error_handler(PROJECT_ERROR_SPECS)
 
 
 def make_json_safe(value: Any) -> Any:
@@ -86,6 +89,7 @@ def register_exception_handlers(app: FastAPI) -> None:
     """Регистрирует exception handlers приложения."""
     app.add_exception_handler(AuthError, cast(ExceptionHandler, auth_error_handler))
     app.add_exception_handler(TaskError, cast(ExceptionHandler, task_error_handler))
+    app.add_exception_handler(ProjectError, cast(ExceptionHandler, project_error_handler))
     app.add_exception_handler(
         RequestValidationError,
         cast(ExceptionHandler, validation_error_handler),

@@ -41,6 +41,8 @@ export function EditTaskDrawer({ taskId, onClose: onDismiss }: EditTaskDrawerPro
   const [recurrenceInterval, setRecurrenceInterval] = useState(1);
   const [recurrenceStartDate, setRecurrenceStartDate] = useState("");
   const [recurrenceEndDate, setRecurrenceEndDate] = useState("");
+  const [projectId, setProjectId] = useState("");
+  const [projectColumnId, setProjectColumnId] = useState("");
   const [titleError, setTitleError] = useState<string | null>(null);
   const [scheduleError, setScheduleError] = useState<string | null>(null);
   const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
@@ -64,6 +66,8 @@ export function EditTaskDrawer({ taskId, onClose: onDismiss }: EditTaskDrawerPro
     setRecurrenceInterval(taskQuery.data.recurrence_interval);
     setRecurrenceStartDate(taskQuery.data.recurrence_start_date ?? "");
     setRecurrenceEndDate(taskQuery.data.recurrence_end_date ?? "");
+    setProjectId(taskQuery.data.project_id ?? "");
+    setProjectColumnId(taskQuery.data.project_column_id ?? "");
   }, [taskQuery.data]);
 
   useEffect(() => {
@@ -124,7 +128,9 @@ export function EditTaskDrawer({ taskId, onClose: onDismiss }: EditTaskDrawerPro
           recurrence_type_code: recurrenceType,
           recurrence_interval: recurrenceType === "weekdays" ? 1 : recurrenceInterval,
           recurrence_start_date: recurrenceType === "none" ? null : recurrenceStartDate || null,
-          recurrence_end_date: recurrenceType === "none" ? null : recurrenceEndDate || null
+          recurrence_end_date: recurrenceType === "none" ? null : recurrenceEndDate || null,
+          project_id: projectId || null,
+          project_column_id: projectId ? projectColumnId || null : null
         }
       });
       onClose();
@@ -197,6 +203,7 @@ export function EditTaskDrawer({ taskId, onClose: onDismiss }: EditTaskDrawerPro
                 plannedDate={plannedDate} plannedTime={plannedTime} deadlineDate={deadlineDate} deadlineTime={deadlineTime}
                 recurrenceType={recurrenceType} recurrenceInterval={recurrenceInterval}
                 recurrenceStartDate={recurrenceStartDate} recurrenceEndDate={recurrenceEndDate}
+                projectId={projectId} projectColumnId={projectColumnId}
                 titleError={titleError} statuses={statusesQuery.data} statusLoading={statusesQuery.isPending} statusError={statusesQuery.isError}
                 onRetryStatuses={() => void statusesQuery.refetch()} recurrenceTypes={recurrenceTypes}
                 onTitleChange={(value) => { setTitle(value); setTitleError(null); }} onDescriptionChange={setDescription} onStatusChange={setStatus}
@@ -207,6 +214,7 @@ export function EditTaskDrawer({ taskId, onClose: onDismiss }: EditTaskDrawerPro
                 onRecurrenceIntervalChange={setRecurrenceInterval}
                 onRecurrenceStartDateChange={(value) => { setRecurrenceStartDate(value); setScheduleError(null); }}
                 onRecurrenceEndDateChange={setRecurrenceEndDate}
+                onProjectChange={setProjectId} onProjectColumnChange={setProjectColumnId}
               />
 
             {scheduleError ? (

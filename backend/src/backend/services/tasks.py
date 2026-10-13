@@ -23,6 +23,12 @@ from backend.dto.tasks import (
     TaskListQuery,
     TaskUpdateData,
 )
+from backend.exceptions.projects import (
+    InvalidTaskProjectError,
+    ProjectCompletionColumnRequiredError,
+    ProjectNotFoundError,
+    RecurringTaskCompletionColumnError,
+)
 from backend.exceptions.tasks import (
     InvalidTaskRecurrenceCompletionError,
     InvalidTaskScheduleError,
@@ -31,8 +37,10 @@ from backend.exceptions.tasks import (
     TaskRecurrenceTypeNotFoundError,
     TaskStatusNotFoundError,
 )
+from backend.models.project import ProjectColumn
 from backend.models.task import Task, TaskRecurrenceCompletion, TaskRecurrenceType, TaskStatus
 from backend.models.user import User
+from backend.repositories.projects import ProjectRepository
 from backend.repositories.tasks import TaskRepository
 from backend.validators.tasks import validate_calendar_range, validate_task_title
 
@@ -100,6 +108,7 @@ class TaskService:
     def __init__(self, db: AsyncSession) -> None:
         self.db = db
         self.tasks = TaskRepository(db)
+        self.projects = ProjectRepository(db)
 
     async def list_statuses(self) -> list[TaskStatus]:
         """Возвращает активные системные статусы задач."""
@@ -123,6 +132,18 @@ class TaskService:
         )
         if recurrence_type != TaskRecurrenceTypeCode.none and status != TaskStatusCode.todo:
             raise InvalidTaskScheduleError()
+        (
+            project_id,
+            project_column_id,
+            project_position,
+            status,
+        ) = await self._resolve_new_task_project(
+            user=user,
+            project_id=data.project_id,
+            project_column_id=data.project_column_id,
+            status=status,
+            recurrence_type=recurrence_type,
+        )
         create_data = TaskCreateData(
             title=validate_task_title(data.title),
             description=data.description,
@@ -135,6 +156,9 @@ class TaskService:
             recurrence_start_date=data.recurrence_start_date,
             recurrence_end_date=data.recurrence_end_date,
             status=status,
+            project_id=project_id,
+            project_column_id=project_column_id,
+            project_position=project_position,
         )
 
         try:
@@ -405,7 +429,46 @@ class TaskService:
             task.recurrence_start_date = data.recurrence_start_date
         if data.has("recurrence_end_date"):
             task.recurrence_end_date = data.recurrence_end_date
-        if data.has("status"):
+        project_fields_changed = data.has("project_id") or data.has("project_column_id")
+        if project_fields_changed:
+            target_project_id = data.project_id if data.has("project_id") else task.project_id
+            target_column_id = (
+                data.project_column_id
+                if data.has("project_column_id")
+                else (None if data.has("project_id") else task.project_column_id)
+            )
+            if target_project_id is None:
+                if target_column_id is not None:
+                    raise InvalidTaskProjectError()
+                await self._detach_task_from_project(task)
+            else:
+                project = await self.projects.get_project_for_user(
+                    project_id=target_project_id,
+                    user_id=user.id,
+                )
+                if project is None:
+                    raise ProjectNotFoundError()
+                columns = await self.projects.list_columns(project_id=target_project_id)
+                requested_status = data.status or TaskStatusCode(task.status_code)
+                column = self._select_project_column(
+                    columns=columns,
+                    column_id=target_column_id,
+                    status=requested_status,
+                )
+                if column.is_completion_column and recurrence_type != TaskRecurrenceTypeCode.none:
+                    raise RecurringTaskCompletionColumnError()
+                await self._place_task_in_project_column(
+                    task=task,
+                    project_id=target_project_id,
+                    column=column,
+                )
+                if recurrence_type == TaskRecurrenceTypeCode.none:
+                    synchronized_status = (
+                        TaskStatusCode.done if column.is_completion_column else TaskStatusCode.todo
+                    )
+                    task.status_code = synchronized_status.value
+                    self._apply_status_timestamps(task, synchronized_status)
+        if data.has("status") and not project_fields_changed:
             if data.status is None:
                 raise TaskStatusNotFoundError()
             if recurrence_type != TaskRecurrenceTypeCode.none:
@@ -413,11 +476,43 @@ class TaskService:
                     raise InvalidTaskScheduleError()
             else:
                 status = await self._get_active_status_code(data.status)
+                if task.project_id is not None:
+                    columns = await self.projects.list_columns(project_id=task.project_id)
+                    column = self._select_project_column(
+                        columns=columns,
+                        column_id=None,
+                        status=status,
+                    )
+                    await self._place_task_in_project_column(
+                        task=task,
+                        project_id=task.project_id,
+                        column=column,
+                    )
                 task.status_code = status.value
                 self._apply_status_timestamps(task, status)
         if recurrence_type != TaskRecurrenceTypeCode.none:
             task.status_code = TaskStatusCode.todo.value
             task.completed_at = None
+            if task.project_id is not None and task.project_column_id is not None:
+                columns = await self.projects.list_columns(project_id=task.project_id)
+                current_column = next(
+                    (item for item in columns if item.id == task.project_column_id),
+                    None,
+                )
+                if current_column is None:
+                    raise InvalidTaskProjectError()
+                if current_column.is_completion_column:
+                    first_active = next(
+                        (item for item in columns if not item.is_completion_column),
+                        None,
+                    )
+                    if first_active is None:
+                        raise ProjectCompletionColumnRequiredError()
+                    await self._place_task_in_project_column(
+                        task=task,
+                        project_id=task.project_id,
+                        column=first_active,
+                    )
         if data.has("archived"):
             task.archived_at = utc_now() if data.archived else None
 
@@ -496,6 +591,111 @@ class TaskService:
         except Exception:
             await self.db.rollback()
             raise
+
+    async def _resolve_new_task_project(
+        self,
+        *,
+        user: User,
+        project_id: UUID | None,
+        project_column_id: UUID | None,
+        status: TaskStatusCode,
+        recurrence_type: TaskRecurrenceTypeCode,
+    ) -> tuple[UUID | None, UUID | None, int | None, TaskStatusCode]:
+        """Проверяет проектные поля новой задачи и выбирает позицию в колонке."""
+        if project_id is None:
+            if project_column_id is not None:
+                raise InvalidTaskProjectError()
+            return None, None, None, status
+
+        project = await self.projects.get_project_for_user(
+            project_id=project_id,
+            user_id=user.id,
+        )
+        if project is None:
+            raise ProjectNotFoundError()
+        columns = await self.projects.list_columns(project_id=project_id)
+        column = self._select_project_column(
+            columns=columns,
+            column_id=project_column_id,
+            status=status,
+        )
+        if column.is_completion_column and recurrence_type != TaskRecurrenceTypeCode.none:
+            raise RecurringTaskCompletionColumnError()
+        position = len(
+            await self.projects.list_column_tasks(
+                project_id=project_id,
+                column_id=column.id,
+            )
+        )
+        synchronized_status = (
+            TaskStatusCode.done if column.is_completion_column else TaskStatusCode.todo
+        )
+        return project_id, column.id, position, synchronized_status
+
+    def _select_project_column(
+        self,
+        *,
+        columns: list[ProjectColumn],
+        column_id: UUID | None,
+        status: TaskStatusCode,
+    ) -> ProjectColumn:
+        """Выбирает явную, завершающую или первую незавершающую колонку."""
+        if column_id is not None:
+            column = next((item for item in columns if item.id == column_id), None)
+            if column is None:
+                raise InvalidTaskProjectError()
+            return column
+        completion = status == TaskStatusCode.done
+        column = next(
+            (item for item in columns if item.is_completion_column == completion),
+            None,
+        )
+        if column is None:
+            raise ProjectCompletionColumnRequiredError()
+        return column
+
+    async def _place_task_in_project_column(
+        self,
+        *,
+        task: Task,
+        project_id: UUID,
+        column: ProjectColumn,
+    ) -> None:
+        """Переставляет задачу в конец колонки и нормализует исходную колонку."""
+        source_project_id = task.project_id
+        source_column_id = task.project_column_id
+        if source_project_id is not None and source_column_id is not None:
+            source_tasks = await self.projects.list_column_tasks(
+                project_id=source_project_id,
+                column_id=source_column_id,
+                exclude_task_id=task.id,
+            )
+            for position, item in enumerate(source_tasks):
+                item.project_position = position
+        target_tasks = await self.projects.list_column_tasks(
+            project_id=project_id,
+            column_id=column.id,
+            exclude_task_id=task.id,
+        )
+        task.project_id = project_id
+        task.project_column_id = column.id
+        target_tasks.append(task)
+        for position, item in enumerate(target_tasks):
+            item.project_position = position
+
+    async def _detach_task_from_project(self, task: Task) -> None:
+        """Отвязывает задачу и закрывает разрыв позиций исходной колонки."""
+        if task.project_id is not None and task.project_column_id is not None:
+            source_tasks = await self.projects.list_column_tasks(
+                project_id=task.project_id,
+                column_id=task.project_column_id,
+                exclude_task_id=task.id,
+            )
+            for position, item in enumerate(source_tasks):
+                item.project_position = position
+        task.project_id = None
+        task.project_column_id = None
+        task.project_position = None
 
     async def _get_active_status_code(self, status: TaskStatusCode) -> TaskStatusCode:
         """Проверяет, что статус есть в активном системном справочнике."""
@@ -588,6 +788,7 @@ class TaskService:
             recurrence_date=recurrence_date,
             q=query.q,
             sort=query.sort,
+            project_id=query.project_id,
         )
 
     def _apply_status_timestamps(self, task: Task, status: TaskStatusCode) -> None:

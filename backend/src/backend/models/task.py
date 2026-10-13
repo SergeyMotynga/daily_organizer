@@ -1,6 +1,7 @@
 """ORM-модели задач и системных статусов задач."""
 
 from datetime import date, datetime, time
+from typing import TYPE_CHECKING
 from uuid import UUID
 
 from sqlalchemy import (
@@ -9,6 +10,7 @@ from sqlalchemy import (
     Date,
     DateTime,
     ForeignKey,
+    ForeignKeyConstraint,
     Integer,
     String,
     Text,
@@ -22,6 +24,9 @@ from sqlalchemy.types import Uuid
 
 from backend.db.base import Base
 from backend.models.user import User
+
+if TYPE_CHECKING:
+    from backend.models.project import Project, ProjectColumn
 
 
 class TaskStatus(Base):
@@ -84,6 +89,18 @@ class Task(Base):
             "OR recurrence_end_date >= recurrence_start_date",
             name="ck_tasks_recurrence_dates_order",
         ),
+        CheckConstraint(
+            "(project_id IS NULL AND project_column_id IS NULL AND project_position IS NULL) OR "
+            "(project_id IS NOT NULL AND project_column_id IS NOT NULL "
+            "AND project_position >= 0)",
+            name="ck_tasks_project_fields_consistent",
+        ),
+        ForeignKeyConstraint(
+            ["project_id", "project_column_id"],
+            ["project_columns.project_id", "project_columns.id"],
+            name="fk_tasks_project_column_membership",
+            ondelete="RESTRICT",
+        ),
     )
 
     id: Mapped[UUID] = mapped_column(
@@ -113,6 +130,13 @@ class Task(Base):
     recurrence_interval: Mapped[int] = mapped_column(Integer, default=1, server_default=text("1"))
     recurrence_start_date: Mapped[date | None] = mapped_column(Date, nullable=True)
     recurrence_end_date: Mapped[date | None] = mapped_column(Date, nullable=True)
+    project_id: Mapped[UUID | None] = mapped_column(
+        ForeignKey("projects.id", ondelete="RESTRICT"),
+        nullable=True,
+        index=True,
+    )
+    project_column_id: Mapped[UUID | None] = mapped_column(nullable=True, index=True)
+    project_position: Mapped[int | None] = mapped_column(Integer, nullable=True)
     completed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     archived_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     created_at: Mapped[datetime] = mapped_column(
@@ -127,6 +151,14 @@ class Task(Base):
     user: Mapped[User] = relationship(back_populates="tasks")
     status: Mapped[TaskStatus] = relationship(back_populates="tasks")
     recurrence_type: Mapped[TaskRecurrenceType] = relationship(back_populates="tasks")
+    project: Mapped["Project | None"] = relationship(
+        back_populates="tasks",
+        foreign_keys=[project_id],
+    )
+    project_column: Mapped["ProjectColumn | None"] = relationship(
+        back_populates="tasks",
+        foreign_keys=[project_column_id],
+    )
     recurrence_completions: Mapped[list["TaskRecurrenceCompletion"]] = relationship(
         back_populates="task",
         cascade="all, delete-orphan",

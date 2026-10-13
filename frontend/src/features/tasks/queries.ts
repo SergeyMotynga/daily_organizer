@@ -24,6 +24,8 @@ export const taskQueryKeys = {
   detail: (taskId: string) => ["tasks", "detail", taskId] as const
 };
 
+const projectQueryRoot = ["projects"] as const;
+
 export function useTasksQuery(params: TaskListParams) {
   return useQuery({
     queryKey: taskQueryKeys.list(params),
@@ -63,6 +65,7 @@ export function useCreateTaskMutation() {
     onSuccess: async () => {
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: taskQueryKeys.lists }),
+        queryClient.invalidateQueries({ queryKey: projectQueryRoot }),
         queryClient.invalidateQueries({ queryKey: calendarQueryKeys.all }),
         queryClient.invalidateQueries({ queryKey: todayQueryKeys.all })
       ]);
@@ -80,6 +83,7 @@ export function useUpdateTaskMutation() {
       queryClient.setQueryData(taskQueryKeys.detail(task.id), task);
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: taskQueryKeys.lists }),
+        queryClient.invalidateQueries({ queryKey: projectQueryRoot }),
         queryClient.invalidateQueries({ queryKey: calendarQueryKeys.all }),
         queryClient.invalidateQueries({ queryKey: todayQueryKeys.all })
       ]);
@@ -96,6 +100,7 @@ export function useDeleteTaskMutation() {
       queryClient.removeQueries({ queryKey: taskQueryKeys.detail(taskId) });
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: taskQueryKeys.lists }),
+        queryClient.invalidateQueries({ queryKey: projectQueryRoot }),
         queryClient.invalidateQueries({ queryKey: calendarQueryKeys.all }),
         queryClient.invalidateQueries({ queryKey: todayQueryKeys.all })
       ]);
@@ -122,6 +127,7 @@ export function useRecurrenceCompletionMutation() {
     onSuccess: async () => {
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: taskQueryKeys.lists }),
+        queryClient.invalidateQueries({ queryKey: projectQueryRoot }),
         queryClient.invalidateQueries({ queryKey: calendarQueryKeys.all }),
         queryClient.invalidateQueries({ queryKey: todayQueryKeys.all })
       ]);

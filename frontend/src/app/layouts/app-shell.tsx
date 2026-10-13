@@ -7,6 +7,7 @@ import {
   CalendarRange,
   Check,
   ChevronDown,
+  Folder,
   LogOut,
   PanelLeftClose,
   PanelLeftOpen,
@@ -15,6 +16,7 @@ import {
 import { NavLink, Outlet, useNavigate } from "react-router";
 
 import { useCurrentUserQuery, useLogoutMutation } from "../../features/auth/session";
+import { useProjectsQuery } from "../../features/projects/queries";
 import { appRoutePaths } from "../route-paths";
 
 type NavigationGroup = {
@@ -27,7 +29,7 @@ type NavigationGroup = {
   }[];
 };
 
-const navigationGroups: NavigationGroup[] = [
+const taskNavigationGroup: NavigationGroup =
   {
     id: "tasks",
     label: "Задачи",
@@ -37,13 +39,13 @@ const navigationGroups: NavigationGroup[] = [
       { to: appRoutePaths.tasks.calendar, label: "Календарь", icon: Calendar },
       { to: appRoutePaths.tasks.archive, label: "Архив", icon: Archive }
     ]
-  }
-];
+  };
 
 export function AppShell() {
   const navigate = useNavigate();
   const currentUserQuery = useCurrentUserQuery();
   const logoutMutation = useLogoutMutation();
+  const projectsQuery = useProjectsQuery(false);
   const user = currentUserQuery.data;
   const displayName = user?.name || user?.login || "Пользователь";
   const initials = displayName.slice(0, 2).toUpperCase();
@@ -54,6 +56,21 @@ export function AppShell() {
   const accountRef = useRef<HTMLDivElement>(null);
   const accountToggleRef = useRef<HTMLButtonElement>(null);
   const mobileTriggerRef = useRef<HTMLButtonElement>(null);
+  const navigationGroups: NavigationGroup[] = [
+    taskNavigationGroup,
+    {
+      id: "projects",
+      label: "Проекты",
+      items: [
+        { to: appRoutePaths.projects.all, label: "Все проекты", icon: Folder },
+        ...(projectsQuery.data?.items.slice(0, 3).map((project) => ({
+          to: appRoutePaths.projects.board(project.id),
+          label: project.title,
+          icon: Folder
+        })) ?? [])
+      ]
+    }
+  ];
 
   const closeMobileSidebar = useCallback(() => {
     setMobileOpen(false);
@@ -76,15 +93,6 @@ export function AppShell() {
 
   useEffect(() => {
     function handleSidebarKeyboard(event: KeyboardEvent) {
-      if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "b") {
-        event.preventDefault();
-        if (isMobile) {
-          setMobileOpen((open) => !open);
-        } else {
-          setSidebarExpanded((expanded) => !expanded);
-        }
-      }
-
       if (event.key === "Escape" && mobileOpen) {
         closeMobileSidebar();
       }
@@ -92,7 +100,7 @@ export function AppShell() {
 
     document.addEventListener("keydown", handleSidebarKeyboard);
     return () => document.removeEventListener("keydown", handleSidebarKeyboard);
-  }, [closeMobileSidebar, isMobile, mobileOpen]);
+  }, [closeMobileSidebar, mobileOpen]);
 
   useEffect(() => {
     if (!accountOpen) return;
@@ -154,7 +162,7 @@ export function AppShell() {
           </span>
           <span className="app-shell__brand-copy">
             <span>Daily Organizer</span>
-            <span className="version-badge">v0.1</span>
+            <span className="version-badge">v0.2</span>
           </span>
         </div>
         <button
@@ -234,7 +242,7 @@ export function AppShell() {
           aria-expanded={sidebarExpanded}
           aria-label={sidebarExpanded ? "Свернуть боковую панель" : "Развернуть боковую панель"}
           onClick={() => setSidebarExpanded((expanded) => !expanded)}
-          title={sidebarExpanded ? "Свернуть боковую панель (Ctrl+B)" : "Развернуть боковую панель (Ctrl+B)"}
+          title={sidebarExpanded ? "Свернуть боковую панель" : "Развернуть боковую панель"}
           type="button"
         >
           {sidebarExpanded ? (
@@ -243,13 +251,6 @@ export function AppShell() {
             <PanelLeftOpen size={17} aria-hidden="true" />
           )}
         </button>
-        <button
-          className="app-shell__sidebar-rail"
-          aria-label={sidebarExpanded ? "Свернуть боковую панель" : "Развернуть боковую панель"}
-          onClick={() => setSidebarExpanded((expanded) => !expanded)}
-          tabIndex={-1}
-          type="button"
-        />
       </aside>
       <button
         className="app-shell__mobile-trigger"

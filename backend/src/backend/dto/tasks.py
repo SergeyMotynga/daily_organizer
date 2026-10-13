@@ -32,6 +32,9 @@ class TaskCreateData:
     recurrence_start_date: date | None = None
     recurrence_end_date: date | None = None
     status: TaskStatusCode | None = None
+    project_id: UUID | None = None
+    project_column_id: UUID | None = None
+    project_position: int | None = None
 
 
 @dataclass(frozen=True)
@@ -51,6 +54,8 @@ class TaskUpdateData:
     recurrence_end_date: date | None = None
     status: TaskStatusCode | None = None
     archived: bool = False
+    project_id: UUID | None = None
+    project_column_id: UUID | None = None
 
     def has(self, field: str) -> bool:
         """Проверяет, что поле пришло в PATCH-запросе."""
@@ -72,6 +77,7 @@ class TaskListQuery:
     timezone: str = "UTC"
     q: str | None = None
     sort: TaskSort = TaskSort.created_at_desc
+    project_id: UUID | None = None
 
 
 @dataclass(frozen=True)
@@ -91,6 +97,7 @@ class TaskListFilters:
     recurrence_date: date | None = None
     q: str | None = None
     sort: TaskSort = TaskSort.created_at_desc
+    project_id: UUID | None = None
 
 
 @dataclass(frozen=True)

@@ -25,12 +25,10 @@ If the task changes product behavior, API contracts, database structure, UX rule
 
 ## Git Flow
 
-- Do not work directly in `main`.
-- Do not work directly in `develop`.
-- Make changes only in feature/fix/chore/docs/refactor/test branches.
-- Feature branches must start from `develop`.
-- Feature branches merge only into `develop` through PR.
-- Do not commit, push, merge, or delete branches without explicit user confirmation.
+- Before selecting/creating a branch, committing, pushing, or handling a PR, read `docs/development/git-flow.md`. It is the repository source of truth for branch naming, base/target branches, delivery permissions, and PR format.
+- In the user's local environment, also read `C:/Users/motyn/.codex/workflows/git-delivery.md` when available for delivery tooling and templates.
+- Make changes in a working branch; preserve existing user changes. Start a new task from current `develop` after the previous PR is merged or closed.
+- The user has standing authorization for commits, ordinary working-branch push, and draft PR delivery of completed tasks. Follow the documented delivery process without asking for the same authorization again. Separate explicit authorization is required for merge, draft-to-ready, force-push, rewriting others' history, and branch deletion.
 
 ## Backend Architecture
 
@@ -113,7 +111,7 @@ Do not run:
 
 Stop and ask the user if:
 
-- the current branch is `main` or `develop`;
+- the base/target branch remains ambiguous after reading the Git flow rules;
 - the change needs more files than allowed;
 - a new dependency is needed;
 - a migration is needed;
@@ -123,7 +121,7 @@ Stop and ask the user if:
 - layer architecture must change;
 - Notion/spec conflicts with code;
 - tests still fail after two fix attempts;
-- commit/push/merge is needed.
+- a Git action requires authorization not already granted by the user, as defined in `docs/development/git-flow.md`.
 
 ## Frontend Workflow
 

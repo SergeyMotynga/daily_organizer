@@ -7,7 +7,7 @@ import { useNavigate } from "react-router";
 
 import type { ProjectColumn, ProjectDetail } from "../../entities/project/types";
 import { appRoutePaths } from "../../app/route-paths";
-import { useTaskDrawerTransition } from "../tasks/task-drawer-transition";
+import { isComboboxHandlingEscape, useTaskDrawerTransition } from "../tasks/task-drawer-transition";
 import {
   useDeleteProjectMutation,
   useProjectColumnMutations,
@@ -56,6 +56,15 @@ export function ProjectSettingsDrawer({ project, onClose: onDismiss }: { project
     document.body.style.overflow = "hidden";
     return () => { document.body.style.overflow = previousOverflow; };
   }, []);
+
+  useEffect(() => {
+    function handleKeyDown(event: KeyboardEvent) {
+      if (isComboboxHandlingEscape(event) || editingColumn || isDragging || pending) return;
+      if (event.key === "Escape" && !event.defaultPrevented) onClose();
+    }
+    document.addEventListener("keydown", handleKeyDown, true);
+    return () => document.removeEventListener("keydown", handleKeyDown, true);
+  }, [editingColumn, isDragging, onClose, pending]);
 
   async function save(event: FormEvent) {
     event.preventDefault();

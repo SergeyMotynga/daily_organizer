@@ -137,7 +137,7 @@ button svg, a svg { flex-shrink: 0; }
 .task-project-inputs { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
 .task-project-inputs .task-create-field > span { display: flex; align-items: center; gap: 5px; }
 .task-project-inputs .ui-combobox, .task-project-inputs .ui-combobox__control { width: 100%; }
-.project-toolbar { display: grid; grid-template-columns: auto minmax(220px,1fr) auto; align-items: center; gap: 12px; overflow-x: auto; padding-bottom: 4px; flex-shrink: 0; }
+.project-toolbar { display: grid; grid-template-columns: max-content minmax(220px,1fr) max-content; align-items: center; gap: 12px; overflow-x: auto; padding-bottom: 4px; flex-shrink: 0; }
 .project-view-switch { margin: 0; }
 .project-toolbar .projects-search { width: 100%; max-width: none; flex: none; }
 .project-toolbar__filters { display: flex; align-items: center; gap: 8px; }
@@ -220,7 +220,7 @@ button svg, a svg { flex-shrink: 0; }
 @media (max-width: 1050px) {
   .projects-grid { grid-template-columns: minmax(0,480px); }
   .project-column { min-width: 270px; }
-  .project-toolbar { grid-template-columns: auto 220px auto; }
+  .project-toolbar { grid-template-columns: max-content 220px max-content; }
 }
 @media (max-width: 760px) {
   .projects-page, .project-page { gap: 16px; }

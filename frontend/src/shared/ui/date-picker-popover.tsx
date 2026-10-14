@@ -140,6 +140,7 @@ export function DatePickerPopover(props: DatePickerPopoverProps) {
       <button
         className="date-picker__trigger"
         type="button"
+        aria-label={`${props.label}: ${props.buttonLabel}`}
         aria-expanded={isOpen}
         onClick={() => {
           if (!isOpen) {

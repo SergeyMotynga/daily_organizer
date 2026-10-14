@@ -312,6 +312,7 @@ export function PlanningPage() {
   const deadlineDate = getDeadlineDate(searchParams);
   const deadlinePreset = getDeadlinePreset(searchParams);
   const hasPlannedRange = Boolean(plannedRange.from || plannedRange.to);
+  const hasDateFilter = Boolean(plannedDate || hasPlannedRange || deadlineDate || deadlinePreset);
   const timezone = deadlinePreset || preset !== "all" || plannedDate
     ? Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC"
     : undefined;
@@ -485,8 +486,8 @@ export function PlanningPage() {
             <SelectCombobox
               className="planning-preset-select"
               label="Быстрые фильтры"
-              value={preset}
-              options={presets}
+              value={hasDateFilter ? "custom_date" : preset}
+              options={hasDateFilter ? [{ value: "custom_date", label: "По дате", disabled: true }, ...presets] : presets}
               onChange={(value) => changePreset(value as TaskListPreset)}
             />
           </div>

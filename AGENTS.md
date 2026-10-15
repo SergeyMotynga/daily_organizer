@@ -23,6 +23,14 @@ Before making changes, read:
 
 If the task changes product behavior, API contracts, database structure, UX rules, or technical decisions, treat Notion as the source of truth and mention what should be updated there.
 
+## Repository Graph
+
+- Before broad repository searches or answering architecture, dependency, or change-impact questions, use the existing `graphify-out/graph.json` to locate relevant symbols and files: `graphify query "<question>"`, `graphify explain "<symbol>"`, or `graphify path "<source>" "<target>"`. Query the existing graph directly; rebuilding is for source changes.
+- Read the matched `source_file` and `source_location` before drawing conclusions or editing. Source code, tests, and the applicable specifications remain authoritative; graph edges are navigation hints with extraction limits and confidence labels.
+- Check `built_at_commit` in `graph.json` against changes to the relevant indexed files. A different HEAD alone does not mean those files changed. Verify stale, inferred, or missing relationships in the current sources.
+- After changing indexed code, run `graphify update .` and `graphify export html`, review the generated diff, and include the updated graph, report, and HTML in the same PR. For changed documents or reference images, use the graphify skill's semantic extraction before relying on their graph representation; `graphify update .` alone covers code.
+- If the graph or CLI is unavailable, the relevant sources have changed, or a query is incomplete, use targeted `rg` searches and source reads to fill the gaps. State material graph limitations and continue the task with the available tools.
+
 ## Git Flow
 
 - Before selecting/creating a branch, committing, pushing, or handling a PR, read `docs/development/git-flow.md`. It is the repository source of truth for branch naming, base/target branches, delivery permissions, and PR format.

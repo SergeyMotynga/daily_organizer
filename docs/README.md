@@ -9,6 +9,7 @@
 - [Черновой план v0.2](version/v0.2/plan.md)
 - [Gitflow и доставка изменений](development/git-flow.md)
 - [Правила работы с Codex](development/codex-working-rules.md)
+- [Чеклист проверки фронтенда](development/frontend-qa-checklist.md)
 
 ## Источник истины
 

@@ -1,0 +1,90 @@
+{
+  "screens": 39,
+  "renders": 156,
+  "svg": 165,
+  "png": 156,
+  "localHtmlLinks": 410,
+  "visibleLabels": 5302,
+  "errors": [],
+  "bounds": [],
+  "overlaps": [],
+  "contrast": [
+    {
+      "theme": "light",
+      "text": "ink",
+      "surface": "creamSurface",
+      "ratio": 17.45,
+      "atLeast4_5": true
+    },
+    {
+      "theme": "light",
+      "text": "grayText",
+      "surface": "creamSurface",
+      "ratio": 6.54,
+      "atLeast4_5": true
+    },
+    {
+      "theme": "light",
+      "text": "white",
+      "surface": "forest",
+      "ratio": 9.46,
+      "atLeast4_5": true
+    },
+    {
+      "theme": "light",
+      "text": "amberText",
+      "surface": "amberSurface",
+      "ratio": 3.05,
+      "atLeast4_5": false
+    },
+    {
+      "theme": "light",
+      "text": "coralText",
+      "surface": "coralSurface",
+      "ratio": 4.59,
+      "atLeast4_5": true
+    },
+    {
+      "theme": "dark",
+      "text": "lightText",
+      "surface": "graphiteSurface",
+      "ratio": 13.37,
+      "atLeast4_5": true
+    },
+    {
+      "theme": "dark",
+      "text": "grayText",
+      "surface": "graphiteSurface",
+      "ratio": 7.28,
+      "atLeast4_5": true
+    },
+    {
+      "theme": "dark",
+      "text": "darkOnLime",
+      "surface": "lime",
+      "ratio": 11.77,
+      "atLeast4_5": true
+    },
+    {
+      "theme": "dark",
+      "text": "amberText",
+      "surface": "amberSurface",
+      "ratio": 7.36,
+      "atLeast4_5": true
+    },
+    {
+      "theme": "dark",
+      "text": "coralText",
+      "surface": "coralSurface",
+      "ratio": 6.25,
+      "atLeast4_5": true
+    }
+  ],
+  "limitations": [
+    "Проверка прямоугольников текста не доказывает отсутствие любых визуальных дефектов.",
+    "Фон за открытой формой/поповером проверяется отдельно на основном экране.",
+    "Частично видимые соседние колонки доски и недели на mobile разрешены.",
+    "Оранжевый текст из выбранной палитры не достигает 4.5:1; см. VERIFICATION.md.",
+    "Проверка браузерного отображения альбома инструментом не выполнялась."
+  ]
+}

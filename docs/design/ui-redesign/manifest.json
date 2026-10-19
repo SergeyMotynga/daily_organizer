@@ -1,0 +1,1332 @@
+{
+  "screens": [
+    {
+      "id": "today",
+      "title": "Сегодня",
+      "description": "План дня и раскрытая задача",
+      "category": "Основные"
+    },
+    {
+      "id": "today-empty",
+      "title": "Сегодня · пусто",
+      "description": "Первый день без задач",
+      "category": "Основные"
+    },
+    {
+      "id": "planning",
+      "title": "Задачи",
+      "description": "Даты, статусы и сортировки",
+      "category": "Основные"
+    },
+    {
+      "id": "planning-filter",
+      "title": "Фильтр по периоду",
+      "description": "Диапазон дат и быстрые фильтры",
+      "category": "Основные"
+    },
+    {
+      "id": "planning-empty",
+      "title": "Поиск · пусто",
+      "description": "Нет совпадений и сброс фильтров",
+      "category": "Основные"
+    },
+    {
+      "id": "calendar-week",
+      "title": "Календарь · неделя",
+      "description": "План, дедлайны и повторения",
+      "category": "Основные"
+    },
+    {
+      "id": "calendar-month",
+      "title": "Календарь · месяц",
+      "description": "Обзор месяца и выбранный день",
+      "category": "Основные"
+    },
+    {
+      "id": "archive",
+      "title": "Архив",
+      "description": "Восстановление и удаление",
+      "category": "Основные"
+    },
+    {
+      "id": "archive-empty",
+      "title": "Архив · пусто",
+      "description": "Нет архивированных задач",
+      "category": "Основные"
+    },
+    {
+      "id": "archive-confirm",
+      "title": "Архив · удаление",
+      "description": "Подтверждение удаления",
+      "category": "Основные"
+    },
+    {
+      "id": "projects",
+      "title": "Проекты",
+      "description": "Прогресс, поиск и сортировка",
+      "category": "Проекты"
+    },
+    {
+      "id": "projects-archived",
+      "title": "Архивные проекты",
+      "description": "Восстановление проекта",
+      "category": "Проекты"
+    },
+    {
+      "id": "projects-empty",
+      "title": "Проекты · пусто",
+      "description": "Создание первого проекта",
+      "category": "Проекты"
+    },
+    {
+      "id": "project-board",
+      "title": "Доска проекта",
+      "description": "Этапы и карточки задач",
+      "category": "Проекты"
+    },
+    {
+      "id": "project-list",
+      "title": "Список проекта",
+      "description": "Таблица и пагинация",
+      "category": "Проекты"
+    },
+    {
+      "id": "project-bulk",
+      "title": "Массовые действия",
+      "description": "Перемещение и выполнение",
+      "category": "Проекты"
+    },
+    {
+      "id": "project-empty",
+      "title": "Пустая доска",
+      "description": "Добавление и перемещение",
+      "category": "Проекты"
+    },
+    {
+      "id": "project-create",
+      "title": "Создание проекта",
+      "description": "Описание и стандартные этапы",
+      "category": "Проекты"
+    },
+    {
+      "id": "project-settings",
+      "title": "Настройки проекта",
+      "description": "Порядок и завершающий этап",
+      "category": "Проекты"
+    },
+    {
+      "id": "project-settings-confirm",
+      "title": "Удаление проекта",
+      "description": "Задачи остаются без проекта",
+      "category": "Проекты"
+    },
+    {
+      "id": "task-create",
+      "title": "Создание задачи",
+      "description": "Независимые план и дедлайн",
+      "category": "Формы задач"
+    },
+    {
+      "id": "task-edit",
+      "title": "Редактирование задачи",
+      "description": "Сохранение и удаление",
+      "category": "Формы задач"
+    },
+    {
+      "id": "task-details",
+      "title": "Детали задачи",
+      "description": "Свойства, история и действия",
+      "category": "Формы задач"
+    },
+    {
+      "id": "task-recurring",
+      "title": "Повторяющаяся задача",
+      "description": "Интервал, начало и окончание",
+      "category": "Формы задач"
+    },
+    {
+      "id": "task-occurrence",
+      "title": "Детали повторения",
+      "description": "Выполнение на конкретную дату",
+      "category": "Формы задач"
+    },
+    {
+      "id": "task-delete",
+      "title": "Удаление задачи",
+      "description": "Подтверждение и отмена",
+      "category": "Формы задач"
+    },
+    {
+      "id": "login",
+      "title": "Вход",
+      "description": "Логин, пароль и сессия",
+      "category": "Авторизация"
+    },
+    {
+      "id": "login-error",
+      "title": "Ошибка входа",
+      "description": "Повторная попытка входа",
+      "category": "Авторизация"
+    },
+    {
+      "id": "register",
+      "title": "Регистрация",
+      "description": "Имя, логин и пароль",
+      "category": "Авторизация"
+    },
+    {
+      "id": "register-error",
+      "title": "Ошибки регистрации",
+      "description": "Ошибки рядом с полями",
+      "category": "Авторизация"
+    },
+    {
+      "id": "register-success",
+      "title": "Аккаунт создан",
+      "description": "Переход ко входу",
+      "category": "Авторизация"
+    },
+    {
+      "id": "states",
+      "title": "Состояния интерфейса",
+      "description": "Загрузка, ошибка и сохранение",
+      "category": "Система"
+    },
+    {
+      "id": "components",
+      "title": "Компоненты и палитра",
+      "description": "Размеры, фокус и семантика",
+      "category": "Система"
+    },
+    {
+      "id": "logo",
+      "title": "Логотип Маршрут",
+      "description": "Знак и версия с названием",
+      "category": "Система"
+    },
+    {
+      "id": "task-recurrence-options",
+      "title": "Варианты повторения",
+      "description": "Каждый день, по будням и раз в N недель",
+      "category": "Формы задач"
+    },
+    {
+      "id": "task-no-project",
+      "title": "Задача без проекта",
+      "description": "Отключённый выбор этапа",
+      "category": "Формы задач"
+    },
+    {
+      "id": "task-invalid",
+      "title": "Ошибка формы задачи",
+      "description": "Название и предупреждение о датах",
+      "category": "Формы задач"
+    },
+    {
+      "id": "project-column-edit",
+      "title": "Редактирование колонки",
+      "description": "Переименование, порядок и завершение",
+      "category": "Проекты"
+    },
+    {
+      "id": "controls",
+      "title": "Меню и фильтры",
+      "description": "Все варианты списков и календаря",
+      "category": "Система"
+    }
+  ],
+  "renders": [
+    {
+      "screen": "today",
+      "theme": "light",
+      "mobile": false,
+      "width": 1440,
+      "height": 1000
+    },
+    {
+      "screen": "today",
+      "theme": "light",
+      "mobile": true,
+      "width": 390,
+      "height": 1700
+    },
+    {
+      "screen": "today",
+      "theme": "dark",
+      "mobile": false,
+      "width": 1440,
+      "height": 1000
+    },
+    {
+      "screen": "today",
+      "theme": "dark",
+      "mobile": true,
+      "width": 390,
+      "height": 1700
+    },
+    {
+      "screen": "today-empty",
+      "theme": "light",
+      "mobile": false,
+      "width": 1440,
+      "height": 1000
+    },
+    {
+      "screen": "today-empty",
+      "theme": "light",
+      "mobile": true,
+      "width": 390,
+      "height": 1150
+    },
+    {
+      "screen": "today-empty",
+      "theme": "dark",
+      "mobile": false,
+      "width": 1440,
+      "height": 1000
+    },
+    {
+      "screen": "today-empty",
+      "theme": "dark",
+      "mobile": true,
+      "width": 390,
+      "height": 1150
+    },
+    {
+      "screen": "planning",
+      "theme": "light",
+      "mobile": false,
+      "width": 1440,
+      "height": 1000
+    },
+    {
+      "screen": "planning",
+      "theme": "light",
+      "mobile": true,
+      "width": 390,
+      "height": 1620
+    },
+    {
+      "screen": "planning",
+      "theme": "dark",
+      "mobile": false,
+      "width": 1440,
+      "height": 1000
+    },
+    {
+      "screen": "planning",
+      "theme": "dark",
+      "mobile": true,
+      "width": 390,
+      "height": 1620
+    },
+    {
+      "screen": "planning-filter",
+      "theme": "light",
+      "mobile": false,
+      "width": 1440,
+      "height": 1000
+    },
+    {
+      "screen": "planning-filter",
+      "theme": "light",
+      "mobile": true,
+      "width": 390,
+      "height": 1620
+    },
+    {
+      "screen": "planning-filter",
+      "theme": "dark",
+      "mobile": false,
+      "width": 1440,
+      "height": 1000
+    },
+    {
+      "screen": "planning-filter",
+      "theme": "dark",
+      "mobile": true,
+      "width": 390,
+      "height": 1620
+    },
+    {
+      "screen": "planning-empty",
+      "theme": "light",
+      "mobile": false,
+      "width": 1440,
+      "height": 1000
+    },
+    {
+      "screen": "planning-empty",
+      "theme": "light",
+      "mobile": true,
+      "width": 390,
+      "height": 1100
+    },
+    {
+      "screen": "planning-empty",
+      "theme": "dark",
+      "mobile": false,
+      "width": 1440,
+      "height": 1000
+    },
+    {
+      "screen": "planning-empty",
+      "theme": "dark",
+      "mobile": true,
+      "width": 390,
+      "height": 1100
+    },
+    {
+      "screen": "calendar-week",
+      "theme": "light",
+      "mobile": false,
+      "width": 1440,
+      "height": 1000
+    },
+    {
+      "screen": "calendar-week",
+      "theme": "light",
+      "mobile": true,
+      "width": 390,
+      "height": 1600
+    },
+    {
+      "screen": "calendar-week",
+      "theme": "dark",
+      "mobile": false,
+      "width": 1440,
+      "height": 1000
+    },
+    {
+      "screen": "calendar-week",
+      "theme": "dark",
+      "mobile": true,
+      "width": 390,
+      "height": 1600
+    },
+    {
+      "screen": "calendar-month",
+      "theme": "light",
+      "mobile": false,
+      "width": 1440,
+      "height": 1000
+    },
+    {
+      "screen": "calendar-month",
+      "theme": "light",
+      "mobile": true,
+      "width": 390,
+      "height": 1350
+    },
+    {
+      "screen": "calendar-month",
+      "theme": "dark",
+      "mobile": false,
+      "width": 1440,
+      "height": 1000
+    },
+    {
+      "screen": "calendar-month",
+      "theme": "dark",
+      "mobile": true,
+      "width": 390,
+      "height": 1350
+    },
+    {
+      "screen": "archive",
+      "theme": "light",
+      "mobile": false,
+      "width": 1440,
+      "height": 1000
+    },
+    {
+      "screen": "archive",
+      "theme": "light",
+      "mobile": true,
+      "width": 390,
+      "height": 1100
+    },
+    {
+      "screen": "archive",
+      "theme": "dark",
+      "mobile": false,
+      "width": 1440,
+      "height": 1000
+    },
+    {
+      "screen": "archive",
+      "theme": "dark",
+      "mobile": true,
+      "width": 390,
+      "height": 1100
+    },
+    {
+      "screen": "archive-empty",
+      "theme": "light",
+      "mobile": false,
+      "width": 1440,
+      "height": 1000
+    },
+    {
+      "screen": "archive-empty",
+      "theme": "light",
+      "mobile": true,
+      "width": 390,
+      "height": 1100
+    },
+    {
+      "screen": "archive-empty",
+      "theme": "dark",
+      "mobile": false,
+      "width": 1440,
+      "height": 1000
+    },
+    {
+      "screen": "archive-empty",
+      "theme": "dark",
+      "mobile": true,
+      "width": 390,
+      "height": 1100
+    },
+    {
+      "screen": "archive-confirm",
+      "theme": "light",
+      "mobile": false,
+      "width": 1440,
+      "height": 1000
+    },
+    {
+      "screen": "archive-confirm",
+      "theme": "light",
+      "mobile": true,
+      "width": 390,
+      "height": 1100
+    },
+    {
+      "screen": "archive-confirm",
+      "theme": "dark",
+      "mobile": false,
+      "width": 1440,
+      "height": 1000
+    },
+    {
+      "screen": "archive-confirm",
+      "theme": "dark",
+      "mobile": true,
+      "width": 390,
+      "height": 1100
+    },
+    {
+      "screen": "projects",
+      "theme": "light",
+      "mobile": false,
+      "width": 1440,
+      "height": 1000
+    },
+    {
+      "screen": "projects",
+      "theme": "light",
+      "mobile": true,
+      "width": 390,
+      "height": 1200
+    },
+    {
+      "screen": "projects",
+      "theme": "dark",
+      "mobile": false,
+      "width": 1440,
+      "height": 1000
+    },
+    {
+      "screen": "projects",
+      "theme": "dark",
+      "mobile": true,
+      "width": 390,
+      "height": 1200
+    },
+    {
+      "screen": "projects-archived",
+      "theme": "light",
+      "mobile": false,
+      "width": 1440,
+      "height": 1000
+    },
+    {
+      "screen": "projects-archived",
+      "theme": "light",
+      "mobile": true,
+      "width": 390,
+      "height": 1100
+    },
+    {
+      "screen": "projects-archived",
+      "theme": "dark",
+      "mobile": false,
+      "width": 1440,
+      "height": 1000
+    },
+    {
+      "screen": "projects-archived",
+      "theme": "dark",
+      "mobile": true,
+      "width": 390,
+      "height": 1100
+    },
+    {
+      "screen": "projects-empty",
+      "theme": "light",
+      "mobile": false,
+      "width": 1440,
+      "height": 1000
+    },
+    {
+      "screen": "projects-empty",
+      "theme": "light",
+      "mobile": true,
+      "width": 390,
+      "height": 1100
+    },
+    {
+      "screen": "projects-empty",
+      "theme": "dark",
+      "mobile": false,
+      "width": 1440,
+      "height": 1000
+    },
+    {
+      "screen": "projects-empty",
+      "theme": "dark",
+      "mobile": true,
+      "width": 390,
+      "height": 1100
+    },
+    {
+      "screen": "project-board",
+      "theme": "light",
+      "mobile": false,
+      "width": 1440,
+      "height": 1000
+    },
+    {
+      "screen": "project-board",
+      "theme": "light",
+      "mobile": true,
+      "width": 390,
+      "height": 1150
+    },
+    {
+      "screen": "project-board",
+      "theme": "dark",
+      "mobile": false,
+      "width": 1440,
+      "height": 1000
+    },
+    {
+      "screen": "project-board",
+      "theme": "dark",
+      "mobile": true,
+      "width": 390,
+      "height": 1150
+    },
+    {
+      "screen": "project-list",
+      "theme": "light",
+      "mobile": false,
+      "width": 1440,
+      "height": 1000
+    },
+    {
+      "screen": "project-list",
+      "theme": "light",
+      "mobile": true,
+      "width": 390,
+      "height": 1680
+    },
+    {
+      "screen": "project-list",
+      "theme": "dark",
+      "mobile": false,
+      "width": 1440,
+      "height": 1000
+    },
+    {
+      "screen": "project-list",
+      "theme": "dark",
+      "mobile": true,
+      "width": 390,
+      "height": 1680
+    },
+    {
+      "screen": "project-bulk",
+      "theme": "light",
+      "mobile": false,
+      "width": 1440,
+      "height": 1000
+    },
+    {
+      "screen": "project-bulk",
+      "theme": "light",
+      "mobile": true,
+      "width": 390,
+      "height": 1800
+    },
+    {
+      "screen": "project-bulk",
+      "theme": "dark",
+      "mobile": false,
+      "width": 1440,
+      "height": 1000
+    },
+    {
+      "screen": "project-bulk",
+      "theme": "dark",
+      "mobile": true,
+      "width": 390,
+      "height": 1800
+    },
+    {
+      "screen": "project-empty",
+      "theme": "light",
+      "mobile": false,
+      "width": 1440,
+      "height": 1000
+    },
+    {
+      "screen": "project-empty",
+      "theme": "light",
+      "mobile": true,
+      "width": 390,
+      "height": 1150
+    },
+    {
+      "screen": "project-empty",
+      "theme": "dark",
+      "mobile": false,
+      "width": 1440,
+      "height": 1000
+    },
+    {
+      "screen": "project-empty",
+      "theme": "dark",
+      "mobile": true,
+      "width": 390,
+      "height": 1150
+    },
+    {
+      "screen": "project-create",
+      "theme": "light",
+      "mobile": false,
+      "width": 1440,
+      "height": 1000
+    },
+    {
+      "screen": "project-create",
+      "theme": "light",
+      "mobile": true,
+      "width": 390,
+      "height": 1100
+    },
+    {
+      "screen": "project-create",
+      "theme": "dark",
+      "mobile": false,
+      "width": 1440,
+      "height": 1000
+    },
+    {
+      "screen": "project-create",
+      "theme": "dark",
+      "mobile": true,
+      "width": 390,
+      "height": 1100
+    },
+    {
+      "screen": "project-settings",
+      "theme": "light",
+      "mobile": false,
+      "width": 1440,
+      "height": 1130
+    },
+    {
+      "screen": "project-settings",
+      "theme": "light",
+      "mobile": true,
+      "width": 390,
+      "height": 1250
+    },
+    {
+      "screen": "project-settings",
+      "theme": "dark",
+      "mobile": false,
+      "width": 1440,
+      "height": 1130
+    },
+    {
+      "screen": "project-settings",
+      "theme": "dark",
+      "mobile": true,
+      "width": 390,
+      "height": 1250
+    },
+    {
+      "screen": "project-settings-confirm",
+      "theme": "light",
+      "mobile": false,
+      "width": 1440,
+      "height": 1270
+    },
+    {
+      "screen": "project-settings-confirm",
+      "theme": "light",
+      "mobile": true,
+      "width": 390,
+      "height": 1320
+    },
+    {
+      "screen": "project-settings-confirm",
+      "theme": "dark",
+      "mobile": false,
+      "width": 1440,
+      "height": 1270
+    },
+    {
+      "screen": "project-settings-confirm",
+      "theme": "dark",
+      "mobile": true,
+      "width": 390,
+      "height": 1320
+    },
+    {
+      "screen": "task-create",
+      "theme": "light",
+      "mobile": false,
+      "width": 1440,
+      "height": 1130
+    },
+    {
+      "screen": "task-create",
+      "theme": "light",
+      "mobile": true,
+      "width": 390,
+      "height": 1250
+    },
+    {
+      "screen": "task-create",
+      "theme": "dark",
+      "mobile": false,
+      "width": 1440,
+      "height": 1130
+    },
+    {
+      "screen": "task-create",
+      "theme": "dark",
+      "mobile": true,
+      "width": 390,
+      "height": 1250
+    },
+    {
+      "screen": "task-edit",
+      "theme": "light",
+      "mobile": false,
+      "width": 1440,
+      "height": 1130
+    },
+    {
+      "screen": "task-edit",
+      "theme": "light",
+      "mobile": true,
+      "width": 390,
+      "height": 1250
+    },
+    {
+      "screen": "task-edit",
+      "theme": "dark",
+      "mobile": false,
+      "width": 1440,
+      "height": 1130
+    },
+    {
+      "screen": "task-edit",
+      "theme": "dark",
+      "mobile": true,
+      "width": 390,
+      "height": 1250
+    },
+    {
+      "screen": "task-details",
+      "theme": "light",
+      "mobile": false,
+      "width": 1440,
+      "height": 1000
+    },
+    {
+      "screen": "task-details",
+      "theme": "light",
+      "mobile": true,
+      "width": 390,
+      "height": 1250
+    },
+    {
+      "screen": "task-details",
+      "theme": "dark",
+      "mobile": false,
+      "width": 1440,
+      "height": 1000
+    },
+    {
+      "screen": "task-details",
+      "theme": "dark",
+      "mobile": true,
+      "width": 390,
+      "height": 1250
+    },
+    {
+      "screen": "task-recurring",
+      "theme": "light",
+      "mobile": false,
+      "width": 1440,
+      "height": 1320
+    },
+    {
+      "screen": "task-recurring",
+      "theme": "light",
+      "mobile": true,
+      "width": 390,
+      "height": 1490
+    },
+    {
+      "screen": "task-recurring",
+      "theme": "dark",
+      "mobile": false,
+      "width": 1440,
+      "height": 1320
+    },
+    {
+      "screen": "task-recurring",
+      "theme": "dark",
+      "mobile": true,
+      "width": 390,
+      "height": 1490
+    },
+    {
+      "screen": "task-occurrence",
+      "theme": "light",
+      "mobile": false,
+      "width": 1440,
+      "height": 1000
+    },
+    {
+      "screen": "task-occurrence",
+      "theme": "light",
+      "mobile": true,
+      "width": 390,
+      "height": 1250
+    },
+    {
+      "screen": "task-occurrence",
+      "theme": "dark",
+      "mobile": false,
+      "width": 1440,
+      "height": 1000
+    },
+    {
+      "screen": "task-occurrence",
+      "theme": "dark",
+      "mobile": true,
+      "width": 390,
+      "height": 1250
+    },
+    {
+      "screen": "task-delete",
+      "theme": "light",
+      "mobile": false,
+      "width": 1440,
+      "height": 1000
+    },
+    {
+      "screen": "task-delete",
+      "theme": "light",
+      "mobile": true,
+      "width": 390,
+      "height": 1100
+    },
+    {
+      "screen": "task-delete",
+      "theme": "dark",
+      "mobile": false,
+      "width": 1440,
+      "height": 1000
+    },
+    {
+      "screen": "task-delete",
+      "theme": "dark",
+      "mobile": true,
+      "width": 390,
+      "height": 1100
+    },
+    {
+      "screen": "login",
+      "theme": "light",
+      "mobile": false,
+      "width": 1440,
+      "height": 1000
+    },
+    {
+      "screen": "login",
+      "theme": "light",
+      "mobile": true,
+      "width": 390,
+      "height": 1100
+    },
+    {
+      "screen": "login",
+      "theme": "dark",
+      "mobile": false,
+      "width": 1440,
+      "height": 1000
+    },
+    {
+      "screen": "login",
+      "theme": "dark",
+      "mobile": true,
+      "width": 390,
+      "height": 1100
+    },
+    {
+      "screen": "login-error",
+      "theme": "light",
+      "mobile": false,
+      "width": 1440,
+      "height": 1000
+    },
+    {
+      "screen": "login-error",
+      "theme": "light",
+      "mobile": true,
+      "width": 390,
+      "height": 1100
+    },
+    {
+      "screen": "login-error",
+      "theme": "dark",
+      "mobile": false,
+      "width": 1440,
+      "height": 1000
+    },
+    {
+      "screen": "login-error",
+      "theme": "dark",
+      "mobile": true,
+      "width": 390,
+      "height": 1100
+    },
+    {
+      "screen": "register",
+      "theme": "light",
+      "mobile": false,
+      "width": 1440,
+      "height": 1000
+    },
+    {
+      "screen": "register",
+      "theme": "light",
+      "mobile": true,
+      "width": 390,
+      "height": 1100
+    },
+    {
+      "screen": "register",
+      "theme": "dark",
+      "mobile": false,
+      "width": 1440,
+      "height": 1000
+    },
+    {
+      "screen": "register",
+      "theme": "dark",
+      "mobile": true,
+      "width": 390,
+      "height": 1100
+    },
+    {
+      "screen": "register-error",
+      "theme": "light",
+      "mobile": false,
+      "width": 1440,
+      "height": 1000
+    },
+    {
+      "screen": "register-error",
+      "theme": "light",
+      "mobile": true,
+      "width": 390,
+      "height": 1150
+    },
+    {
+      "screen": "register-error",
+      "theme": "dark",
+      "mobile": false,
+      "width": 1440,
+      "height": 1000
+    },
+    {
+      "screen": "register-error",
+      "theme": "dark",
+      "mobile": true,
+      "width": 390,
+      "height": 1150
+    },
+    {
+      "screen": "register-success",
+      "theme": "light",
+      "mobile": false,
+      "width": 1440,
+      "height": 1000
+    },
+    {
+      "screen": "register-success",
+      "theme": "light",
+      "mobile": true,
+      "width": 390,
+      "height": 1100
+    },
+    {
+      "screen": "register-success",
+      "theme": "dark",
+      "mobile": false,
+      "width": 1440,
+      "height": 1000
+    },
+    {
+      "screen": "register-success",
+      "theme": "dark",
+      "mobile": true,
+      "width": 390,
+      "height": 1100
+    },
+    {
+      "screen": "states",
+      "theme": "light",
+      "mobile": false,
+      "width": 1440,
+      "height": 1000
+    },
+    {
+      "screen": "states",
+      "theme": "light",
+      "mobile": true,
+      "width": 390,
+      "height": 1650
+    },
+    {
+      "screen": "states",
+      "theme": "dark",
+      "mobile": false,
+      "width": 1440,
+      "height": 1000
+    },
+    {
+      "screen": "states",
+      "theme": "dark",
+      "mobile": true,
+      "width": 390,
+      "height": 1650
+    },
+    {
+      "screen": "components",
+      "theme": "light",
+      "mobile": false,
+      "width": 1440,
+      "height": 1000
+    },
+    {
+      "screen": "components",
+      "theme": "light",
+      "mobile": true,
+      "width": 390,
+      "height": 1150
+    },
+    {
+      "screen": "components",
+      "theme": "dark",
+      "mobile": false,
+      "width": 1440,
+      "height": 1000
+    },
+    {
+      "screen": "components",
+      "theme": "dark",
+      "mobile": true,
+      "width": 390,
+      "height": 1150
+    },
+    {
+      "screen": "logo",
+      "theme": "light",
+      "mobile": false,
+      "width": 1440,
+      "height": 1000
+    },
+    {
+      "screen": "logo",
+      "theme": "light",
+      "mobile": true,
+      "width": 390,
+      "height": 1250
+    },
+    {
+      "screen": "logo",
+      "theme": "dark",
+      "mobile": false,
+      "width": 1440,
+      "height": 1000
+    },
+    {
+      "screen": "logo",
+      "theme": "dark",
+      "mobile": true,
+      "width": 390,
+      "height": 1250
+    },
+    {
+      "screen": "task-recurrence-options",
+      "theme": "light",
+      "mobile": false,
+      "width": 1440,
+      "height": 1000
+    },
+    {
+      "screen": "task-recurrence-options",
+      "theme": "light",
+      "mobile": true,
+      "width": 390,
+      "height": 1320
+    },
+    {
+      "screen": "task-recurrence-options",
+      "theme": "dark",
+      "mobile": false,
+      "width": 1440,
+      "height": 1000
+    },
+    {
+      "screen": "task-recurrence-options",
+      "theme": "dark",
+      "mobile": true,
+      "width": 390,
+      "height": 1320
+    },
+    {
+      "screen": "task-no-project",
+      "theme": "light",
+      "mobile": false,
+      "width": 1440,
+      "height": 1130
+    },
+    {
+      "screen": "task-no-project",
+      "theme": "light",
+      "mobile": true,
+      "width": 390,
+      "height": 1320
+    },
+    {
+      "screen": "task-no-project",
+      "theme": "dark",
+      "mobile": false,
+      "width": 1440,
+      "height": 1130
+    },
+    {
+      "screen": "task-no-project",
+      "theme": "dark",
+      "mobile": true,
+      "width": 390,
+      "height": 1320
+    },
+    {
+      "screen": "task-invalid",
+      "theme": "light",
+      "mobile": false,
+      "width": 1440,
+      "height": 1250
+    },
+    {
+      "screen": "task-invalid",
+      "theme": "light",
+      "mobile": true,
+      "width": 390,
+      "height": 1320
+    },
+    {
+      "screen": "task-invalid",
+      "theme": "dark",
+      "mobile": false,
+      "width": 1440,
+      "height": 1250
+    },
+    {
+      "screen": "task-invalid",
+      "theme": "dark",
+      "mobile": true,
+      "width": 390,
+      "height": 1320
+    },
+    {
+      "screen": "project-column-edit",
+      "theme": "light",
+      "mobile": false,
+      "width": 1440,
+      "height": 1000
+    },
+    {
+      "screen": "project-column-edit",
+      "theme": "light",
+      "mobile": true,
+      "width": 390,
+      "height": 1320
+    },
+    {
+      "screen": "project-column-edit",
+      "theme": "dark",
+      "mobile": false,
+      "width": 1440,
+      "height": 1000
+    },
+    {
+      "screen": "project-column-edit",
+      "theme": "dark",
+      "mobile": true,
+      "width": 390,
+      "height": 1320
+    },
+    {
+      "screen": "controls",
+      "theme": "light",
+      "mobile": false,
+      "width": 1440,
+      "height": 1490
+    },
+    {
+      "screen": "controls",
+      "theme": "light",
+      "mobile": true,
+      "width": 390,
+      "height": 2600
+    },
+    {
+      "screen": "controls",
+      "theme": "dark",
+      "mobile": false,
+      "width": 1440,
+      "height": 1490
+    },
+    {
+      "screen": "controls",
+      "theme": "dark",
+      "mobile": true,
+      "width": 390,
+      "height": 2600
+    }
+  ]
+}

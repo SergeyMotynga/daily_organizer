@@ -1,6 +1,8 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import type { TaskListParams, UpdateTaskPayload } from "../../entities/task/types";
+import { loadArchiveCollection, paginateArchive, type ArchiveSort } from "./archive-tasks";
+export type { ArchiveSort } from "./archive-tasks";
 import { calendarQueryKeys } from "../calendar/queries";
 import { todayQueryKeys } from "../today/queries";
 import {
@@ -31,6 +33,16 @@ export function useTasksQuery(params: TaskListParams) {
     queryKey: taskQueryKeys.list(params),
     queryFn: () => getTasks(params),
     placeholderData: (previousData) => previousData
+  });
+}
+
+// API не сортирует по archived_at: получаем все страницы до сортировки и пагинации.
+export function useArchiveTasksQuery(params: TaskListParams, sort: ArchiveSort) {
+  const request = { ...params, limit: 100, offset: 0 };
+  return useQuery({
+    queryKey: [...taskQueryKeys.list(request), "archive-collection"],
+    queryFn: () => loadArchiveCollection((offset) => getTasks({ ...request, offset })),
+    select: (items) => paginateArchive(items, sort, params.limit, params.offset)
   });
 }
 

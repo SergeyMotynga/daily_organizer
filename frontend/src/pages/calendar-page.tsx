@@ -16,6 +16,8 @@ import type { CalendarTaskItem } from "../entities/task/types";
 import { useCalendarViewQuery } from "../features/calendar/queries";
 import { CreateTaskDrawer } from "../features/tasks/create-task-drawer";
 import { TaskDetailsDrawer } from "../features/tasks/task-details-drawer";
+import { useRecurrenceCompletionMutation, useUpdateTaskMutation } from "../features/tasks/queries";
+import { Checkbox } from "../shared/ui/checkbox";
 import { getRecurrenceLabel } from "../features/tasks/recurrence";
 import {
   formatCompactDate,
@@ -157,6 +159,9 @@ function CalendarItemChip({ item, onOpen }: { item: DatedCalendarItem; onOpen: (
 }
 
 function CalendarSideItem({ item, onOpen, showTime = false }: { item: DatedCalendarItem; onOpen: () => void; showTime?: boolean }) {
+  const update = useUpdateTaskMutation();
+  const completion = useRecurrenceCompletionMutation();
+  const recurring = item.task.recurrence_type_code !== "none";
   const time = getItemTime(item);
   const recurrenceLabel =
     item.kind === "recurrence"
@@ -164,6 +169,11 @@ function CalendarSideItem({ item, onOpen, showTime = false }: { item: DatedCalen
       : null;
 
   return (
+    <div className="route-calendar-side-row">
+      <Checkbox className="route-task__check" aria-label={`${item.status === "done" ? "Снять выполнение" : "Выполнить"}: ${item.task.title}`} isSelected={item.status === "done"} isDisabled={update.isPending || completion.isPending || (recurring && !item.occurrence_date)} onChange={(checked) => {
+        if (recurring && item.occurrence_date) completion.mutate({ taskId: item.task.id, occurrenceDate: item.occurrence_date, completed: checked });
+        else update.mutate({ taskId: item.task.id, payload: {status: checked ? "done" : "todo"} });
+      }} />
     <button
       className={`calendar-side-item calendar-side-item--${item.kind}`}
       type="button"
@@ -182,6 +192,8 @@ function CalendarSideItem({ item, onOpen, showTime = false }: { item: DatedCalen
         {recurrenceLabel ? <small> · {recurrenceLabel}</small> : null}
       </span>
     </button>
+    {update.isError || completion.isError ? <span className="route-board-error" role="alert">Не удалось изменить задачу.</span> : null}
+    </div>
   );
 }
 

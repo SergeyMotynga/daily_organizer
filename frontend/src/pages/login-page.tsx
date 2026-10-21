@@ -55,7 +55,7 @@ export function LoginPage() {
 
   return (
     <form className="auth-form" onSubmit={handleSubmit} noValidate>
-      <h1 id="login-title">Вход в аккаунт</h1>
+      <div><h1 id="login-title">С возвращением</h1><p className="route-auth__subtitle">Войдите в Daily Organizer</p></div>
 
       <label className="form-field">
         <span className="form-field__label">Логин</span>
@@ -127,9 +127,7 @@ export function LoginPage() {
         {loginMutation.isPending ? "Входим..." : "Войти"}
       </PrimaryButton>
 
-      <Link className="secondary-button" to="/register">
-        Создать аккаунт
-      </Link>
+      <p className="auth-switch">Нет аккаунта? <Link to="/register">Создать аккаунт</Link></p>
     </form>
   );
 }

@@ -113,7 +113,7 @@ export function RegisterPage() {
 
   return (
     <form className="auth-form" onSubmit={handleSubmit} noValidate>
-      <h1 id="register-title">Создать аккаунт</h1>
+      <div><h1 id="register-title">Создать аккаунт</h1><p className="route-auth__subtitle">Начните с простого плана на день</p></div>
 
       <div className="auth-form__grid">
         <label className="form-field">

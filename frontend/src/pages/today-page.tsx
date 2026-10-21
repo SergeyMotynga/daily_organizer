@@ -55,8 +55,7 @@ export function TodayPage() {
         <section className="route-panel route-today-main" aria-label="План на день">
           <header className="route-section-heading"><div className="route-day-plan-title"><h2>План на день</h2><SelectCombobox className="route-today-sort" label="Сортировка плана на день" value={sort} options={[{ value: "planned_time", label: "По времени" }, { value: "created_at_desc", label: "Сначала новые" }, { value: "deadline_date_asc", label: "По дедлайну" }]} onChange={setSort} /></div><div className="route-attention"><Link to={`${appRoutePaths.tasks.planning}?deadline_preset=today&statuses=todo`}><Clock3 size={20} />{data.summary.today_deadline} дедлайна сегодня</Link><Link to={`${appRoutePaths.tasks.planning}?deadline_preset=overdue&statuses=todo`}><AlertCircle size={20} />{data.summary.overdue} просрочено</Link></div></header>
           <div className="route-task-scroll">
-            {timed.map((task) => row(task))}
-            {untimed.length ? <><h3 className="route-group-label">Без времени · {untimed.length}</h3>{untimed.map((task) => row(task, false))}</> : null}
+            {sort === "planned_time" ? <>{timed.map((task) => row(task))}{untimed.length ? <><h3 className="route-group-label">Без времени · {untimed.length}</h3>{untimed.map((task) => row(task, false))}</> : null}</> : planned.map((task) => row(task))}
             {!planned.length ? <div className="route-empty"><h2>На сегодня всё спокойно</h2><p>Запланированных задач пока нет.</p><button type="button" onClick={() => setCreating(true)}>Создать задачу</button></div> : null}
             <button type="button" className="route-completed-toggle" aria-expanded={showDone} onClick={() => setShowDone(!showDone)}><ChevronRight size={20} style={{ transform: showDone ? "rotate(90deg)" : undefined }} aria-hidden="true" />Выполнено сегодня · {data.blocks.done_today.length}</button>
             {showDone ? data.blocks.done_today.map((task) => row(task, false)) : null}

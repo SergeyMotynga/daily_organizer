@@ -201,7 +201,7 @@ function CalendarMoreLink({ date, count }: { date: string; count: number }) {
   return (
     <Link
       className="calendar-more"
-      to={`${appRoutePaths.tasks.planning}?planned_date=${date}`}
+      to={`${appRoutePaths.tasks.planning}?planned_date=${date}&statuses=todo,done`}
       onClick={(event) => event.stopPropagation()}
     >
       +{count} ещё
@@ -493,7 +493,7 @@ export function CalendarPage() {
                     {selectedUntimed.length > 2 ? (
                       <Link
                         className="calendar-side-more"
-                        to={`${appRoutePaths.tasks.planning}?planned_date=${dateValue}`}
+                        to={`${appRoutePaths.tasks.planning}?planned_date=${dateValue}&statuses=todo,done`}
                       >
                         +{selectedUntimed.length - 2} ещё
                       </Link>
@@ -517,7 +517,7 @@ export function CalendarPage() {
                     {selectedDeadlines.length > 3 ? (
                       <Link
                         className="calendar-side-more"
-                        to={`${appRoutePaths.tasks.planning}?deadline_date=${dateValue}`}
+                        to={`${appRoutePaths.tasks.planning}?deadline_date=${dateValue}&statuses=todo,done`}
                       >
                         +{selectedDeadlines.length - 3} ещё
                       </Link>
@@ -541,7 +541,7 @@ export function CalendarPage() {
                   <p className="calendar-selected-day__empty">На этот день задач нет.</p>
                 ) : null}
               </div>
-              <Link to={`${appRoutePaths.tasks.planning}?planned_date=${dateValue}`}>Показать в планировании</Link>
+              <Link to={`${appRoutePaths.tasks.planning}?planned_date=${dateValue}&statuses=todo,done`}>Показать в планировании</Link>
             </aside>
           </div>
         )}

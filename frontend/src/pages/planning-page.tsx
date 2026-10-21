@@ -4,6 +4,7 @@ import { useSearchParams } from "react-router";
 import type { Task, TaskDeadlinePreset, TaskListParams, TaskListPreset, TaskSort, TaskStatusCode } from "../entities/task/types";
 import { CreateTaskDrawer } from "../features/tasks/create-task-drawer";
 import { TaskListItem } from "../features/tasks/task-list-item";
+import { groupPlanningTasks } from "../features/tasks/planning-groups";
 import { TaskDateFilters } from "../features/tasks/task-date-filters";
 import { useRecurrenceCompletionMutation, useTasksQuery, useUpdateTaskMutation } from "../features/tasks/queries";
 import { isTaskRecurring } from "../features/tasks/recurrence";
@@ -68,13 +69,7 @@ export function PlanningPage() {
   function changePreset(value: string) {
     change({ preset: value === "overdue" ? "all" : value, deadline_preset: value === "overdue" ? "overdue" : null, deadline_date: null, planned_date: null, planned_from: null, planned_to: null, offset: null });
   }
-  const today = getTodayValue();
-  const groups = new Map<string,Task[]>();
-  for (const task of query.data?.items ?? []) {
-    const date = task.occurrence_date ?? task.planned_date;
-    const label = !date ? "Без даты" : date < today ? "Ранее" : date === today ? "Сегодня" : formatCompactDate(date);
-    groups.set(label, [...(groups.get(label) ?? []),task]);
-  }
+  const groups = groupPlanningTasks(query.data?.items ?? [], sort, getTodayValue());
   const hasDates = Boolean(plannedDate || range.from || range.to || deadlinePreset || queryParams.deadline_date);
   const hasFilters = hasDates || preset !== "all" || search || projectId;
   return <>
@@ -88,7 +83,7 @@ export function PlanningPage() {
           {update.isError || completion.isError ? <p className="planning-mutation-error" role="alert">Не удалось изменить статус задачи. Попробуйте ещё раз.</p> : null}
           {query.isPending ? <div className="planning-loading" role="status"><div aria-hidden="true" />Загружаем задачи…</div> : null}
           {query.isError ? <div className="planning-error" role="alert"><AlertCircle size={28} /><div><h2>Не удалось загрузить задачи</h2><p>Проверьте подключение и попробуйте ещё раз.</p></div><button type="button" onClick={() => void query.refetch()}><RotateCcw size={18} />Повторить</button></div> : null}
-          {query.data ? <><div className="route-task-scroll">{query.data.items.length ? [...groups].map(([label,tasks]) => <section key={label}><h3 className="route-group-label">{label} · {tasks.length}</h3>{tasks.map((task) => <TaskListItem key={`${task.id}-${task.occurrence_date}`} task={task} expanded={expanded === `${task.id}-${task.occurrence_date}`} onExpand={() => setExpanded(expanded === `${task.id}-${task.occurrence_date}` ? null : `${task.id}-${task.occurrence_date}`)} isPending={pendingId === task.id} onStatusChange={(status) => changeStatus(task,status)} showPlan={label === "Ранее"} />)}</section>) : <div className="route-empty"><CalendarDays size={36} /><h2>Задачи не найдены</h2><p>Измените фильтры или создайте новую задачу.</p><button type="button" onClick={() => setCreating(true)}>Создать задачу</button></div>}</div><Pagination className="planning-pagination" label="Всего задач" total={total} limit={limit} offset={offset} onLimitChange={(value) => change({ limit:String(value), offset:null })} onOffsetChange={(value) => change({ offset:String(value) })} /></> : null}
+          {query.data ? <><div className="route-task-scroll">{query.data.items.length ? groups.map(({key,label,tasks,showPlan}) => <section key={key}>{label ? <h3 className="route-group-label">{label} · {tasks.length}</h3> : null}{tasks.map((task) => <TaskListItem key={`${task.id}-${task.occurrence_date}`} task={task} expanded={expanded === `${task.id}-${task.occurrence_date}`} onExpand={() => setExpanded(expanded === `${task.id}-${task.occurrence_date}` ? null : `${task.id}-${task.occurrence_date}`)} isPending={pendingId === task.id} onStatusChange={(status) => changeStatus(task,status)} showPlan={showPlan} />)}</section>) : <div className="route-empty"><CalendarDays size={36} /><h2>Задачи не найдены</h2><p>Измените фильтры или создайте новую задачу.</p><button type="button" onClick={() => setCreating(true)}>Создать задачу</button></div>}</div><Pagination className="planning-pagination" label="Всего задач" total={total} limit={limit} offset={offset} onLimitChange={(value) => change({ limit:String(value), offset:null })} onOffsetChange={(value) => change({ offset:String(value) })} /></> : null}
         </section>
         <aside className="route-panel route-context route-filters" ref={filterRef} tabIndex={-1} aria-label="Фильтры задач"><h2>Фильтры</h2><h3>Проект</h3><SelectCombobox label="Фильтр по проекту" value={projectId} options={[{value:"",label:"Все проекты"},...(projects.data?.items.map((project) => ({value:project.id,label:project.title})) ?? [])]} onChange={(value) => change({project_id:value,offset:null})} /><TaskDateFilters key={`${plannedDate}-${range.from}-${range.to}`} date={plannedDate} range={range} onApply={(value) => change({ planned_date: value.date ?? null, planned_from: value.range?.from ?? null, planned_to: value.range?.to ?? null, deadline_date:null, deadline_preset:null, preset:null, offset:null })} /></aside>
       </div>

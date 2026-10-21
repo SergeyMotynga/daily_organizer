@@ -165,7 +165,7 @@ export function EditTaskDrawer({ taskId, onClose: onDismiss }: EditTaskDrawerPro
         aria-labelledby="edit-task-title"
       >
         <header className="task-drawer__header">
-          <h2 id="edit-task-title">Редактирование задачи</h2>
+          <h2 id="edit-task-title">Редактировать задачу</h2>
           <button
             className="task-drawer__close"
             type="button"
@@ -236,6 +236,10 @@ export function EditTaskDrawer({ taskId, onClose: onDismiss }: EditTaskDrawerPro
                 </div>
               ) : null}
 
+
+            </div>
+
+            <footer className="task-create-form__footer">
               <div className="task-edit-delete">
                 {!isDeleteConfirmOpen ? (
                   <button
@@ -272,9 +276,6 @@ export function EditTaskDrawer({ taskId, onClose: onDismiss }: EditTaskDrawerPro
                   </div>
                 )}
               </div>
-            </div>
-
-            <footer className="task-create-form__footer">
               <button
                 className="task-create-button task-create-button--secondary"
                 type="button"
@@ -293,7 +294,7 @@ export function EditTaskDrawer({ taskId, onClose: onDismiss }: EditTaskDrawerPro
                   recurrenceTypesQuery.isPending
                 }
               >
-                {updateTaskMutation.isPending ? "Сохраняем…" : "Сохранить"}
+                {updateTaskMutation.isPending ? "Сохраняем…" : "Сохранить изменения"}
               </button>
             </footer>
           </form>

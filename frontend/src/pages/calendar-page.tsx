@@ -16,6 +16,8 @@ import type { CalendarTaskItem } from "../entities/task/types";
 import { useCalendarViewQuery } from "../features/calendar/queries";
 import { CreateTaskDrawer } from "../features/tasks/create-task-drawer";
 import { TaskDetailsDrawer } from "../features/tasks/task-details-drawer";
+import { useRecurrenceCompletionMutation, useUpdateTaskMutation } from "../features/tasks/queries";
+import { Checkbox } from "../shared/ui/checkbox";
 import { getRecurrenceLabel } from "../features/tasks/recurrence";
 import {
   formatCompactDate,
@@ -157,6 +159,9 @@ function CalendarItemChip({ item, onOpen }: { item: DatedCalendarItem; onOpen: (
 }
 
 function CalendarSideItem({ item, onOpen, showTime = false }: { item: DatedCalendarItem; onOpen: () => void; showTime?: boolean }) {
+  const update = useUpdateTaskMutation();
+  const completion = useRecurrenceCompletionMutation();
+  const recurring = item.task.recurrence_type_code !== "none";
   const time = getItemTime(item);
   const recurrenceLabel =
     item.kind === "recurrence"
@@ -164,6 +169,11 @@ function CalendarSideItem({ item, onOpen, showTime = false }: { item: DatedCalen
       : null;
 
   return (
+    <div className="route-calendar-side-row">
+      <Checkbox className="route-task__check" aria-label={`${item.status === "done" ? "Снять выполнение" : "Выполнить"}: ${item.task.title}`} isSelected={item.status === "done"} isDisabled={update.isPending || completion.isPending || (recurring && !item.occurrence_date)} onChange={(checked) => {
+        if (recurring && item.occurrence_date) completion.mutate({ taskId: item.task.id, occurrenceDate: item.occurrence_date, completed: checked });
+        else update.mutate({ taskId: item.task.id, payload: {status: checked ? "done" : "todo"} });
+      }} />
     <button
       className={`calendar-side-item calendar-side-item--${item.kind}`}
       type="button"
@@ -182,6 +192,8 @@ function CalendarSideItem({ item, onOpen, showTime = false }: { item: DatedCalen
         {recurrenceLabel ? <small> · {recurrenceLabel}</small> : null}
       </span>
     </button>
+    {update.isError || completion.isError ? <span className="route-board-error" role="alert">Не удалось изменить задачу.</span> : null}
+    </div>
   );
 }
 
@@ -189,7 +201,7 @@ function CalendarMoreLink({ date, count }: { date: string; count: number }) {
   return (
     <Link
       className="calendar-more"
-      to={`${appRoutePaths.tasks.planning}?planned_date=${date}`}
+      to={`${appRoutePaths.tasks.planning}?planned_date=${date}&statuses=todo,done`}
       onClick={(event) => event.stopPropagation()}
     >
       +{count} ещё
@@ -481,7 +493,7 @@ export function CalendarPage() {
                     {selectedUntimed.length > 2 ? (
                       <Link
                         className="calendar-side-more"
-                        to={`${appRoutePaths.tasks.planning}?planned_date=${dateValue}`}
+                        to={`${appRoutePaths.tasks.planning}?planned_date=${dateValue}&statuses=todo,done`}
                       >
                         +{selectedUntimed.length - 2} ещё
                       </Link>
@@ -505,7 +517,7 @@ export function CalendarPage() {
                     {selectedDeadlines.length > 3 ? (
                       <Link
                         className="calendar-side-more"
-                        to={`${appRoutePaths.tasks.planning}?deadline_date=${dateValue}`}
+                        to={`${appRoutePaths.tasks.planning}?deadline_date=${dateValue}&statuses=todo,done`}
                       >
                         +{selectedDeadlines.length - 3} ещё
                       </Link>
@@ -529,7 +541,7 @@ export function CalendarPage() {
                   <p className="calendar-selected-day__empty">На этот день задач нет.</p>
                 ) : null}
               </div>
-              <Link to={`${appRoutePaths.tasks.planning}?planned_date=${dateValue}`}>Показать в планировании</Link>
+              <Link to={`${appRoutePaths.tasks.planning}?planned_date=${dateValue}&statuses=todo,done`}>Показать в планировании</Link>
             </aside>
           </div>
         )}

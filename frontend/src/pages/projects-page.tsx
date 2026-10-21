@@ -30,6 +30,7 @@ export function ProjectsPage() {
   const projectsQuery = useProjectsQuery(archived, query);
   const projects = useMemo(() => {
     const items = [...(projectsQuery.data?.items ?? [])];
+    if (sort === "updated_desc") items.sort((a, b) => b.updated_at.localeCompare(a.updated_at));
     if (sort === "title_asc") items.sort((a, b) => a.title.localeCompare(b.title, "ru"));
     if (sort === "progress_desc") items.sort((a, b) => b.progress_percent - a.progress_percent);
     if (sort === "updated_asc") items.sort((a, b) => a.updated_at.localeCompare(b.updated_at));
@@ -38,12 +39,12 @@ export function ProjectsPage() {
 
   return <div className="projects-page">
     <header className="projects-page__header">
-      <div><h1>Все проекты</h1><p>Личные проекты и задачи по этапам</p></div>
+      <div><h1>Проекты</h1><p>Пространства для ваших задач</p></div>
       <button className="projects-primary-button" type="button" onClick={() => setCreateOpen(true)}><Plus size={19} />Новый проект</button>
     </header>
     <div className="projects-toolbar">
-      <label className="projects-search"><Search size={20} /><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Поиск по проектам" /></label>
-      <div className="projects-tabs" role="tablist"><button type="button" className={!archived ? "active" : ""} onClick={() => setArchived(false)}>Активные</button><button type="button" className={archived ? "active" : ""} onClick={() => setArchived(true)}>Архивные</button></div>
+      <label className="projects-search"><Search size={20} aria-hidden="true" /><input aria-label="Найти проект" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Найти проект" /></label>
+      <div className="projects-tabs" aria-label="Состояние проектов"><button type="button" aria-pressed={!archived} className={!archived ? "active" : ""} onClick={() => setArchived(false)}>Активные</button><button type="button" aria-pressed={archived} className={archived ? "active" : ""} onClick={() => setArchived(true)}>Архивные</button></div>
       <SelectCombobox className="projects-sort" label="Сортировка проектов" value={sort} onChange={setSort} options={[{ value: "updated_desc", label: "Сначала новые" }, { value: "updated_asc", label: "Сначала старые" }, { value: "title_asc", label: "По названию" }, { value: "progress_desc", label: "По прогрессу" }]} />
     </div>
     {projectsQuery.isPending ? <div className="projects-state">Загружаем проекты…</div> : null}
@@ -57,6 +58,7 @@ export function ProjectsPage() {
         <footer><span><Clock3 size={16} />{formatUpdatedAt(project.updated_at)}</span>{archived ? <RestoreButton projectId={project.id} /> : <button type="button" onClick={() => navigate(appRoutePaths.projects.board(project.id))}>Открыть проект</button>}</footer>
       </article>)}
     </div>
+    <p className="route-projects-note">{archived ? "Архивные проекты можно восстановить и продолжить работу." : "Проекты объединяют задачи по этапам. Общие задачи также видны в плане и календаре."}</p>
     {createOpen ? <CreateProjectDrawer onClose={() => setCreateOpen(false)} /> : null}
   </div>;
 }

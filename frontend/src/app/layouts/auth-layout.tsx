@@ -1,126 +1,28 @@
-import { CalendarDays, Check, LockKeyhole, Target, Zap } from "lucide-react";
+import { Folder, MoreHorizontal } from "lucide-react";
 import { Outlet, useLocation } from "react-router";
-
-type AuthVariant = "login" | "register";
-
-function getAuthVariant(pathname: string): AuthVariant {
-  return pathname === "/register" ? "register" : "login";
-}
-
-function LoginInfo() {
-  return (
-    <>
-      <span className="brand-mark brand-mark--large" aria-hidden="true">
-        <Check size={34} strokeWidth={3} />
-      </span>
-      <div className="auth-info__title-row">
-        <h2>Daily Organizer</h2>
-        <span className="version-badge">v0.1</span>
-      </div>
-      <p>Личный план задач без лишнего шума</p>
-      <div className="auth-info__divider" />
-      <ul className="auth-benefits">
-        <li>
-          <span aria-hidden="true">
-            <Check size={20} strokeWidth={2.5} />
-          </span>
-          <div>
-            <strong>Фокус на главном</strong>
-            <p>Все, что нужно для продуктивного дня.</p>
-          </div>
-        </li>
-        <li>
-          <span aria-hidden="true">
-            <CalendarDays size={20} strokeWidth={2.3} />
-          </span>
-          <div>
-            <strong>Планируйте просто</strong>
-            <p>Список задач, дедлайны и статус без лишнего.</p>
-          </div>
-        </li>
-        <li>
-          <span aria-hidden="true">
-            <Zap size={20} strokeWidth={2.3} />
-          </span>
-          <div>
-            <strong>Двигайтесь каждый день</strong>
-            <p>Маленькие шаги приводят к большим результатам.</p>
-          </div>
-        </li>
-      </ul>
-      <p className="auth-info__footer">© 2026 Daily Organizer</p>
-    </>
-  );
-}
-
-function RegisterInfo() {
-  return (
-    <>
-      <span className="brand-mark brand-mark--muted brand-mark--large" aria-hidden="true">
-        <Check size={34} strokeWidth={3} />
-      </span>
-      <h2>Планируйте день по-своему</h2>
-      <p>Простой и понятный планировщик задач, который помогает фокусироваться на важном.</p>
-      <ul className="auth-benefits">
-        <li>
-          <span aria-hidden="true">
-            <CalendarDays size={20} strokeWidth={2.3} />
-          </span>
-          <div>
-            <strong>Все под контролем</strong>
-            <p>Создавайте задачи, планируйте и отмечайте выполненное без лишних сложностей.</p>
-          </div>
-        </li>
-        <li>
-          <span aria-hidden="true">
-            <Target size={20} strokeWidth={2.3} />
-          </span>
-          <div>
-            <strong>Фокус на главном</strong>
-            <p>Ясный список задач помогает не отвлекаться и достигать целей.</p>
-          </div>
-        </li>
-        <li>
-          <span aria-hidden="true">
-            <LockKeyhole size={20} strokeWidth={2.3} />
-          </span>
-          <div>
-            <strong>Ваши данные — только ваши</strong>
-            <p>Никакого лишнего. Только вы и ваши задачи.</p>
-          </div>
-        </li>
-      </ul>
-    </>
-  );
-}
+import { Brand, ThemeToggle } from "../../shared/ui/brand";
 
 export function AuthLayout() {
-  const { pathname } = useLocation();
-  const variant = getAuthVariant(pathname);
-  const isRegister = variant === "register";
-
-  return (
-    <main className={`auth-page auth-page--${variant}`}>
-      <div className="auth-page__stage">
-        <div className="auth-page__form-pane">
-          <section className={`auth-card auth-card--${variant}`} aria-labelledby={`${variant}-title`}>
-            <div className="auth-card__header">
-                <div className="auth-card__brand-row">
-                  <span className="brand-mark" aria-hidden="true"><Check size={30} strokeWidth={3} /></span>
-                  <span className="auth-card__brand">Daily Organizer</span>
-                  <span className="version-badge">v0.1</span>
-                </div>
-                <p className="auth-card__subtitle">Личный план задач без лишнего шума</p>
-            </div>
-            {isRegister ? <div className="auth-card__divider" /> : null}
-            <Outlet />
-          </section>
+  const isRegister = useLocation().pathname === "/register";
+  return <div className={`route-auth${isRegister ? " route-auth--register" : ""}`}>
+    <header className="route-topbar"><Brand /><ThemeToggle /></header>
+    <main className="route-auth__body">
+      <section className="route-auth__intro" aria-label="О Daily Organizer">
+        <Brand hero />
+        <h2>{isRegister ? <>Освободите место<br />для важного</> : <>Планы становятся<br />делами</>}</h2>
+        <p>{isRegister ? <>Задачи, проекты и планы — в одном<br />спокойном пространстве.</> : <>Спокойное место для задач, проектов<br />и вашего дня.</>}</p>
+        <div className="route-auth__preview" aria-label="Пример плана на день">
+          {[
+            { time: "09:30", title: "Читать 20 минут", project: "Личное · Ежедневно" },
+            { time: "14:00", title: "Написать тесты авторизации", project: "Daily Organizer" },
+            { time: "18:30", title: "Английский 15 минут", project: "Личное · По будням" }
+          ].map((task, index) => <div className={`route-auth__example${index === 1 ? " route-auth__example--selected" : ""}`} key={task.time}><span>{task.time}</span><span className="route-auth__circle" aria-hidden="true" /><div><strong>{task.title}</strong><small><Folder size={16} aria-hidden="true" />{task.project}</small></div><MoreHorizontal size={22} aria-hidden="true" /></div>)}
         </div>
-
-        <aside className={`auth-info auth-info--${variant}`} aria-label="О Daily Organizer">
-          {isRegister ? <RegisterInfo /> : <LoginInfo />}
-        </aside>
-      </div>
+      </section>
+      <section className="route-auth__form-pane" aria-label={isRegister ? "Регистрация" : "Вход"}>
+        <div className="route-auth__form"><Outlet /></div>
+        <footer>© 2026 Daily Organizer</footer>
+      </section>
     </main>
-  );
+  </div>;
 }

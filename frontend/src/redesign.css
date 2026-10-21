@@ -1,0 +1,598 @@
+/* Утверждённые Full HD макеты: primitives → semantic → component. */
+:root {
+  --route-paper: #f7f6f2;
+  --route-white: #fdfdfc;
+  --route-sage: #f2f2eb;
+  --route-green: #18593f;
+  --route-lime: #d4ed86;
+  --route-charcoal: #1c211f;
+  --route-panel-dark: #242a27;
+  --bg: var(--route-paper);
+  --surface: var(--route-white);
+  --context: var(--route-sage);
+  --lane: #f0f2ed;
+  --ink: #101b23;
+  --muted: #59626a;
+  --faint: #89918f;
+  --line: #e1e4de;
+  --accent: var(--route-green);
+  --on-accent: #fff;
+  --selected: #e8efe6;
+  --hover: #edf2e9;
+  --warning: #a95000;
+  --danger: #bb3036;
+  --danger-bg: #fbefef;
+  --shadow: 0 0.6rem 2.2rem #1d342414;
+  --shadow-color: #1d342414;
+  --scrim: #0b150e38;
+  --text: var(--ink);
+  --primary: var(--accent);
+  --secondary: var(--muted);
+  --border: var(--line);
+  --panel-border: var(--line);
+  --soft: var(--selected);
+  --success: var(--accent);
+  --control-height: 2.5rem;
+  --panel-radius: 1rem;
+  --control-radius: 0.55rem;
+  --button-bg: var(--accent);
+  --button-text: var(--on-accent);
+  --card-bg: var(--surface);
+  color-scheme: light;
+  font-family: "Segoe UI", Arial, sans-serif;
+  color: var(--ink);
+  background: var(--bg);
+  /* Размеры макета сохраняются при 1920 × 1080 CSS px; браузерная рамка
+     и системный масштаб учитываются через фактическую рабочую область. */
+  font-size: clamp(13px, min(1.0416667vw, 1.8518519dvh), 20px);
+}
+:root[data-theme=dark] {
+  --bg: var(--route-charcoal);
+  --surface: var(--route-panel-dark);
+  --context: #252c27;
+  --lane: #212824;
+  --ink: #f3f5ef;
+  --muted: #bdc6bf;
+  --faint: #85928a;
+  --line: #3a433c;
+  --accent: var(--route-lime);
+  --on-accent: #131a0e;
+  --selected: #303d31;
+  --hover: #303a30;
+  --warning: #ffb141;
+  --danger: #ff7d7f;
+  --danger-bg: #432b2c;
+  --shadow: 0 0.6rem 2.2rem #0003;
+  --shadow-color: #0003;
+  color-scheme: dark;
+}
+body { background: var(--bg); color: var(--ink); }
+button, input, textarea, select { color: inherit; }
+button, input, textarea, select { background: var(--surface); border-color: var(--line); }
+button:hover:not(:disabled) { background: var(--hover); }
+input:focus, textarea:focus, select:focus, :focus-visible { outline: 2px solid var(--accent); outline-offset: 0.15rem; }
+h1 { font-size: 1.9rem; font-weight: 650; letter-spacing: -.8px; }
+h2 { font-size: 1.35rem; font-weight: 650; }
+h3 { font-size: 1.1rem; font-weight: 650; }
+svg { flex-shrink: 0; }
+button { transition: background-color 120ms ease, color 120ms ease; }
+.skip-link { position: fixed; z-index: 200; left: 1rem; top: -5rem; padding: 0.6rem 1rem; background: var(--surface); border: 2px solid var(--accent); border-radius: 0.5rem; }
+.skip-link:focus { top: 0.6rem; }
+.route-shell { height: 100dvh; display: flex; flex-direction: column; overflow: hidden; }
+.route-topbar { height: 3.8rem; flex-shrink: 0; padding: 0 2rem; border-bottom: 1px solid var(--line); display: flex; align-items: center; justify-content: space-between; gap: 1.2rem; }
+.route-brand { display: inline-flex; align-items: center; gap: 0.8rem; font-size: 1.2rem; font-weight: 600; min-width: 14.5rem; }
+.route-logo { display: block; flex-shrink: 0; }
+.route-logo--dark, [data-theme=dark] .route-logo--light { display: none; }
+[data-theme=dark] .route-logo--dark { display: block; }
+.route-brand--hero { min-width: 0; margin-bottom: 1.7rem; }
+.route-navigation { display: flex; align-self: stretch; align-items: center; gap: 0.8rem; }
+.route-navigation a { position: relative; height: 3.2rem; padding: 0 1.25rem; display: flex; align-items: center; border-radius: 0.65rem; color: var(--muted); font-size: 1.05rem; white-space: nowrap; }
+.route-navigation a:hover { background: var(--hover); }
+.route-navigation a[aria-current=page] { color: var(--accent); background: var(--hover); font-weight: 600; }
+.route-navigation a[aria-current=page]::after { content: ""; position: absolute; bottom: 0; height: 0.15rem; background: var(--accent); left: 0.5rem; right: 0.5rem; }
+.route-account { position: relative; min-width: 14.5rem; display: flex; justify-content: flex-end; align-items: center; gap: 0.9rem; }
+.route-account button { display: flex; align-items: center; justify-content: center; border: 0; background: transparent; }
+.theme-toggle, .route-settings { width: 2.2rem; height: 2.2rem; color: var(--muted); }
+.route-account__toggle { gap: 0.4rem; padding: 0; }
+.route-avatar { width: 2.25rem; height: 2.25rem; display: grid; place-items: center; background: var(--selected); border-radius: 50%; font-size: 1rem; }
+.route-account__panel { position: absolute; z-index: 40; right: 0; top: 2.9rem; width: 14.5rem; padding: 1rem; border: 1px solid var(--line); border-radius: 0.7rem; background: var(--surface); box-shadow: var(--shadow); display: grid; gap: 0.6rem; overflow-wrap: anywhere; }
+.route-account__panel > span { font-size: 0.8rem; color: var(--muted); }
+.route-account__panel button { justify-content: flex-start; gap: 0.6rem; padding: 0.6rem 0; border-top: 1px solid var(--line); }
+.route-content { flex: 1; min-height: 0; padding: 0 1.4rem 1.2rem; overflow: auto; outline: none; }
+.route-content > section { height: 100%; min-height: 0; }
+.route-content :is(.today-page__header,.planning-page__header,.calendar-page__header,.archive-page__header,.projects-page__header) { min-height: 4.8rem; height: 4.8rem; align-items: center; margin: 0; flex-shrink: 0; }
+.route-content :is(.today-page__header,.planning-page__header,.calendar-page__header,.archive-page__header,.projects-page__header) p { font-size: 0.85rem; color: var(--muted); margin-top: 0.35rem; }
+.route-content :is(.today-page__new-task,.planning-page__new-task,.archive-page__new-task,.calendar-page__header > button,.projects-primary-button), .task-create-button--primary, .primary-button {
+  min-height: 2.6rem; padding: 0 1.2rem; border-radius: 0.6rem; border: 1px solid var(--accent); background: var(--button-bg); color: var(--button-text); font-size: 1rem; font-weight: 500; box-shadow: none;
+}
+.route-content :is(.today-page__new-task,.planning-page__new-task,.archive-page__new-task,.calendar-page__header > button,.projects-primary-button):hover:not(:disabled), .task-create-button--primary:hover:not(:disabled), .primary-button:hover:not(:disabled) { background: var(--accent); color: var(--on-accent); filter: brightness(.94); }
+.ui-combobox__control, .date-picker__trigger { min-height: var(--control-height); height: var(--control-height); border-radius: var(--control-radius); background: var(--surface); border-color: var(--line); font-size: 0.9rem; color: var(--ink); }
+.ui-combobox__popover, .date-picker__popover { background: var(--surface); color: var(--ink); border-color: var(--line); box-shadow: var(--shadow); }
+.ui-combobox__item { color: var(--ink); font-size: 0.85rem; padding: 0.6rem 0.7rem; }
+.ui-combobox__item:is([data-focused],[data-selected]) { color: var(--accent); background: var(--selected); }
+.ui-checkbox { gap: 0.6rem; font-size: 0.9rem; }
+.ui-checkbox__indicator { height: 1.25rem; width: 1.25rem; border-color: var(--faint); background: var(--surface); color: var(--on-accent); box-shadow: none; border-radius: 0.3rem; }
+.ui-checkbox__indicator svg { width: 0.9rem; height: 0.9rem; }
+.ui-checkbox:is([data-selected],[data-indeterminate]) .ui-checkbox__indicator,
+.ui-checkbox[data-hovered]:is([data-selected],[data-indeterminate]):not([data-disabled]) .ui-checkbox__indicator { background: var(--accent); color: var(--on-accent); border-color: var(--accent); }
+.ui-checkbox[data-focus-visible] .ui-checkbox__indicator, .ui-radio[data-focus-visible] .ui-radio__indicator { outline-color: var(--accent); }
+.route-panel { background: var(--surface); border: 1px solid var(--line); border-radius: var(--panel-radius); min-height: 0; min-width: 0; }
+.route-context { background: var(--context); padding: 1.4rem; overflow: auto; }
+.route-section-heading { min-height: 3.4rem; display: flex; justify-content: space-between; align-items: center; gap: 1rem; padding: 0 1.2rem; border-bottom: 1px solid var(--line); flex-shrink: 0; }
+.route-section-heading h2 { font-size: 1.35rem; }
+.route-heading-left, .route-heading-actions, .route-attention { display: flex; gap: 1.2rem; align-items: center; }
+.route-heading-left > span { font-size: 1.05rem; }
+.route-heading-actions > span { font-size: 0.85rem; color: var(--muted); }
+.route-date-arrows { display: flex; gap: 0.5rem; }
+.route-date-arrows button { height: 2.4rem; width: 2.4rem; display: grid; place-items: center; border-radius: 0.55rem; }
+.route-attention { gap: 1rem; font-size: 0.9rem; }
+.route-attention a { display: flex; align-items: center; gap: 0.4rem; }
+.route-attention a:first-child { color: var(--warning); }
+.route-attention a:last-child { color: var(--danger); }
+.route-today-grid { flex: 1; min-height: 0; display: grid; grid-template-columns: minmax(0,1fr) 24.1rem; gap: 1rem; }
+.route-today-main { display: flex; flex-direction: column; }
+.route-task-scroll { flex: 1; overflow: auto; min-height: 0; padding: 0 0.7rem; scrollbar-width: thin; }
+.route-task { border-bottom: 1px solid var(--line); padding: 0.6rem 0.9rem; }
+.route-task:last-child { border-bottom: 0; }
+.route-task__row { display: flex; align-items: center; gap: 1.1rem; min-height: 2.5rem; }
+.route-task__time { font-size: 1.1rem; width: 3.9rem; flex-shrink: 0; font-variant-numeric: tabular-nums; }
+.route-task__check .ui-checkbox__indicator { height: 1.6rem; width: 1.6rem; border-width: 2px; border-radius: 50%; }
+.route-task__copy { flex: 1; min-width: 0; }
+.route-task__title { border: 0; background: transparent; color: var(--ink); text-align: left; padding: 0; font-size: 1.15rem; line-height: 1.32; letter-spacing: -.35px; overflow-wrap: anywhere; }
+.route-task__meta { display: flex; flex-wrap: wrap; gap: 0.4rem; align-items: center; font-size: 0.85rem; margin-top: 0.15rem; color: var(--muted); }
+.route-task__deadline { display: inline-flex; gap: 0.4rem; align-items: center; font-size: 0.9rem; white-space: nowrap; color: var(--warning); }
+.route-task__deadline--overdue { color: var(--danger); }
+.route-task__more { border: 0; background: transparent; color: var(--muted); width: 1.6rem; height: 1.8rem; display: grid; place-items: center; padding: 0; }
+.route-task--done .route-task__title { text-decoration: line-through; color: var(--muted); }
+.route-task--expanded { background: var(--selected); border-radius: 0.8rem; border: 0; margin: 0.4rem 0; padding: 0.9rem; }
+.route-task--expanded .route-task__title { font-weight: 600; }
+.route-task__details { margin: 1rem 0 0 7.2rem; font-size: 0.95rem; line-height: 1.5; overflow-wrap: anywhere; }
+.route-task__details > p { white-space: pre-wrap; }
+.route-task__metadata { display: flex; flex-wrap: wrap; align-items: center; gap: 1rem 1.5rem; margin-top: 1rem; color: var(--muted); font-size: 0.85rem; }
+.route-task__metadata > span { display: inline-flex; gap: 0.4rem; align-items: center; }
+.route-task__footer { display: flex; align-items: center; justify-content: space-between; gap: 1rem; border-top: 1px solid var(--line); margin-top: 0.8rem; padding-top: 0.8rem; }
+.route-task__footer button { display: flex; gap: 0.4rem; align-items: center; border: 0; background: transparent; padding: 0; color: var(--accent); font-size: 0.9rem; }
+.route-task__footer button:last-child { color: var(--muted); }
+.route-group-label { font-size: 1.1rem; padding: 0.9rem 0.9rem 0.3rem; font-weight: 650; }
+.route-completed-toggle { min-height: 2.2rem; padding: 0.4rem 0.9rem; display: flex; align-items: center; gap: 0.6rem; border: 0; background: transparent; font-size: 1rem; color: var(--muted); }
+.route-empty { padding: 2rem; text-align: center; color: var(--muted); }
+.route-side-section { border-top: 1px solid var(--line); padding-top: 1.2rem; margin-top: 1.4rem; }
+.route-side-section h3 { margin-bottom: 0.7rem; }
+.route-side-task { display: flex; align-items: center; gap: 0.7rem; min-height: 2.55rem; font-size: 0.9rem; }
+.route-side-task > button { background: transparent; border: 0; flex: 1; min-width: 0; padding: 0.25rem 0; text-align: left; overflow-wrap: anywhere; }
+.route-side-task > span { font-size: 0.8rem; color: var(--warning); white-space: nowrap; }
+.route-side-section > a { font-size: 0.9rem; display: inline-flex; margin-top: 0.7rem; }
+.route-calendar .rdp-root { --rdp-accent-color: var(--accent); --rdp-accent-background-color: var(--selected); --rdp-day-height: 2.4rem; --rdp-day-width: 3rem; --rdp-day_button-height: 2.3rem; --rdp-day_button-width: 2.3rem; --rdp-selected-border: 0; width: 100%; margin: 0; font-size: 0.9rem; }
+.route-calendar .rdp-months, .route-calendar .rdp-month { width: 100%; max-width: none; }
+.route-calendar .rdp-month_grid { width: 100%; }
+.route-calendar .rdp-month_caption { height: 2.4rem; margin-bottom: 0.8rem; }
+.route-calendar .rdp-caption_label { font-size: 1.35rem; font-weight: 650; text-transform: capitalize; }
+.route-calendar .rdp-nav { top: 0.2rem; right: 0; gap: 0.6rem; }
+.route-calendar .rdp-button_previous, .route-calendar .rdp-button_next { border: 0; color: var(--muted); background: transparent; }
+.route-calendar .rdp-chevron { fill: var(--muted); width: 1rem; height: 1rem; }
+.route-calendar .rdp-weekday { font-size: 0.8rem; color: var(--muted); font-weight: 400; padding-bottom: 0.5rem; }
+.route-calendar .rdp-day_button { margin: auto; border-radius: 50%; font-size: 0.9rem; font-weight: 400; }
+.route-calendar .rdp-selected .rdp-day_button { background: var(--accent); color: var(--on-accent); font-weight: 650; }
+.route-calendar .rdp-range_middle { background: var(--selected); }
+.route-calendar .rdp-range_middle .rdp-day_button { background: transparent; color: var(--accent); }
+.route-calendar .rdp-outside { color: var(--faint); }
+.route-calendar .rdp-today:not(.rdp-selected) .rdp-day_button { outline: 1px solid var(--accent); outline-offset: -1px; color: var(--accent); }
+@media (prefers-reduced-motion: reduce) { button { transition: none; } }
+.muted { color: var(--muted); }
+.small { font-size: 0.85rem; font-weight: 400; }
+.today-page { display: flex; flex-direction: column; gap: 0; }
+.route-day-plan-title { display: flex; align-items: center; gap: 0.7rem; }
+.route-today-sort { width: 7.8rem; }
+.route-today-sort .ui-combobox__control { border: 0; background: transparent; height: 2rem; min-height: 2rem; font-size: 0.75rem; color: var(--muted); }
+.route-auth { height: 100dvh; overflow: auto; }
+.route-auth__body { min-height: calc(100dvh - 3.8rem); display: grid; grid-template-columns: 55% 45%; }
+.route-auth__intro { padding: 6.5rem 4.4rem 4rem; }
+.route-auth__intro h2 { font-size: 2.4rem; font-weight: 650; letter-spacing: -1px; line-height: 1.2; }
+.route-auth__intro > p { margin-top: 1.1rem; font-size: 1.2rem; line-height: 1.5; color: var(--muted); }
+.route-auth__preview { margin-top: 2.4rem; padding: 0.4rem; border: 1px solid var(--line); border-radius: 1rem; background: var(--surface); }
+.route-auth__example { min-height: 4.6rem; padding: 0.8rem; display: flex; align-items: center; gap: 1.1rem; border-bottom: 1px solid var(--line); }
+.route-auth__example:last-child { border: 0; }
+.route-auth__example--selected { background: var(--selected); border-radius: 0.65rem; }
+.route-auth__example > span:first-child { width: 3.6rem; font-size: 1rem; }
+.route-auth__circle { width: 1.6rem; height: 1.6rem; border: 2px solid var(--faint); border-radius: 50%; flex-shrink: 0; }
+.route-auth__example > div { flex: 1; min-width: 0; }
+.route-auth__example strong { font-size: 1.1rem; font-weight: 400; }
+.route-auth__example small { display: flex; align-items: center; gap: 0.4rem; color: var(--muted); font-size: 0.8rem; margin-top: 0.15rem; }
+.route-auth__form-pane { background: var(--surface); border-left: 1px solid var(--line); display: flex; align-items: center; justify-content: center; position: relative; padding: 2.25rem 2.4rem 4.5rem; }
+.route-auth__form { width: 26rem; max-width: 100%; }
+.route-auth__form .auth-form { display: flex; flex-direction: column; gap: 1.15rem; }
+.route-auth__form h1 { font-size: 1.9rem; line-height: 1.2; margin: 0; font-weight: 650; letter-spacing: -.8px; }
+.route-auth__subtitle { font-size: 0.95rem; color: var(--muted); margin: 0.6rem 0 0.55rem; }
+.route-auth__form .form-field__label { font-size: 0.85rem; }
+.route-auth__form .auth-input { height: 2.85rem; padding: 0 0.75rem; border-radius: 0.5rem; }
+.route-auth__form .auth-input input { font-size: 0.95rem; }
+.route-auth__form .auth-input__icon { display: none; }
+.route-auth__form .auth-input__action { min-height: 1.6rem; min-width: 1.6rem; align-items: center; justify-content: center; }
+.route-auth__form .auth-checkbox { font-size: 0.9rem; margin: 1px 0; }
+.route-auth__form .primary-button { height: 2.8rem; font-size: 1.05rem; }
+.route-auth__form .primary-button__content { color: var(--on-accent); }
+.route-auth__form .auth-switch { margin: 0; font-size: 0.9rem; color: var(--muted); }
+.route-auth__form .auth-switch a { margin-left: 0.4rem; }
+.route-auth__form .auth-form__grid { display: grid; grid-template-columns: 1fr; gap: 0.9rem; }
+.route-auth__form-pane > footer { position: absolute; bottom: 1.8rem; color: var(--muted); font-size: 0.75rem; }
+.route-auth--register .route-auth__intro { padding-top: 6rem; }
+.route-auth--register .route-auth__form .auth-input { height: 2.6rem; }
+.route-auth--register .route-auth__form h1 { font-size: 1.8rem; }
+.route-auth--register .route-auth__form .auth-form { gap: 0.9rem; }
+.form-field__error, .task-create-field__error { font-size: 0.7rem; }
+.auth-alert, .task-create-error, .today-quick-error, .planning-mutation-error, .archive-mutation-error { color: var(--danger); background: var(--danger-bg); border-color: var(--danger); font-size: 0.8rem; }
+.route-planning { display: flex; flex-direction: column; gap: 0; }
+.route-planning-toolbar { display: flex; align-items: center; gap: 0.8rem; height: 3.9rem; padding-bottom: 0.9rem; flex-shrink: 0; }
+.route-search { height: 2.5rem; width: 20.4rem; padding: 0 0.8rem; display: flex; align-items: center; gap: 0.6rem; background: var(--surface); border: 1px solid var(--line); border-radius: 0.55rem; color: var(--muted); flex-shrink: 0; }
+.route-search input { font-size: 0.9rem; flex: 1; width: 100%; border: 0; background: transparent; outline: none; }
+.route-search:focus-within { outline: 2px solid var(--accent); outline-offset: 2px; }
+.route-segment { display: flex; align-items: stretch; height: 2.5rem; border: 1px solid var(--line); background: var(--surface); border-radius: 0.55rem; overflow: hidden; flex-shrink: 0; }
+.route-segment button { height: 100%; border: 0; border-radius: 0; padding: 0 1.1rem; font-size: 0.9rem; white-space: nowrap; color: var(--muted); background: transparent; }
+.route-segment button[aria-pressed=true] { background: var(--selected); color: var(--accent); font-weight: 600; }
+.route-segment--small { height: 1.8rem; border-radius: 0.45rem; }
+.route-segment--small button { padding: 0 0.7rem; font-size: 0.75rem; }
+.route-filter-button { display: flex; align-items: center; gap: 0.5rem; height: 2.6rem; padding: 0 1.2rem; border-radius: 0.6rem; font-size: 1rem; margin-left: auto; }
+.route-planning-layout { flex: 1; min-height: 0; display: grid; grid-template-columns: minmax(0,1fr) 24.1rem; gap: 1rem; }
+.route-planning-main { display: flex; flex-direction: column; }
+.route-planning-main .route-section-heading { height: 3.6rem; }
+.route-status-tabs { display: flex; align-self: stretch; gap: 1.5rem; }
+.route-status-tabs button { position: relative; border: 0; border-radius: 0; background: transparent; color: var(--muted); padding: 0; font-size: 0.9rem; }
+.route-status-tabs button[aria-pressed=true] { color: var(--accent); font-weight: 600; }
+.route-status-tabs button[aria-pressed=true]::after { content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 0.15rem; background: var(--accent); }
+.route-planning-sort { width: 12rem; }
+.route-planning-main .route-task { padding: 0.35rem 0.8rem; }
+.route-planning-main .route-task__row { min-height: 2.3rem; }
+.route-planning-main .route-task__title { font-size: 1.05rem; line-height: 1.3rem; }
+.route-planning-main .route-task__meta { font-size: 0.75rem; line-height: 0.95rem; }
+.route-planning-main .route-task__time { font-size: 0.95rem; }
+.route-planning-main .route-task__deadline { font-size: 0.8rem; }
+.route-planning-main .route-task--expanded { padding: 0.7rem 0.8rem; }
+.route-planning-main .route-task__details { margin-top: 0.75rem; font-size: 0.9rem; }
+.route-planning-main .route-task__metadata { margin-top: 0.8rem; font-size: 0.8rem; }
+.route-planning-main .route-task__footer { margin-top: 0.7rem; padding-top: 0.6rem; }
+.route-planning-main .route-task__footer button { font-size: 0.85rem; }
+.route-planning-main .route-group-label { padding-top: 0.6rem; padding-bottom: 0.2rem; font-size: 1rem; }
+.route-filters { padding: 1.2rem; }
+.route-filters > h2 { font-size: 1.25rem; }
+.route-filters > h3 { font-size: 0.95rem; margin: 1.2rem 0 0.6rem; }
+.route-date-filter > header { display: flex; justify-content: space-between; align-items: center; margin: 1.3rem 0 1rem; }
+.route-date-filter > header h3 { font-size: 0.95rem; }
+.route-calendar--filter { border-top: 1px solid var(--line); padding-top: 1.2rem; }
+.route-calendar--filter .rdp-root { --rdp-day-height: 2.3rem; --rdp-day_button-height: 2.1rem; --rdp-day_button-width: 2.1rem; }
+.route-calendar--filter .rdp-caption_label { font-size: 1.2rem; }
+.route-date-selection { display: flex; justify-content: space-between; align-items: center; gap: 0.6rem; border-top: 1px solid var(--line); margin-top: 1.1rem; padding-top: 1rem; font-size: 0.8rem; color: var(--muted); }
+.route-date-selection strong { font-size: 0.9rem; font-weight: 500; color: var(--ink); }
+.route-date-filter__actions { display: flex; justify-content: flex-end; gap: 0.6rem; margin-top: 1.1rem; }
+.route-date-filter__actions button { height: 2.3rem; font-size: 0.85rem; padding: 0 0.9rem; }
+.route-date-filter__actions button:last-child { background: var(--accent); color: var(--on-accent); border-color: var(--accent); }
+.route-date-filter > p { margin-top: 0.9rem; color: var(--muted); font-size: 0.7rem; line-height: 1.5; }
+.route-applied-filters { display: flex; align-items: center; gap: 0.9rem; padding: 0.6rem 1rem; border-bottom: 1px solid var(--line); font-size: 0.85rem; }
+.route-applied-filters > span { background: var(--selected); color: var(--accent); padding: 0.35rem 0.5rem; border-radius: 0.45rem; }
+.route-applied-filters button { display: flex; gap: 0.4rem; align-items: center; border: 0; background: transparent; color: var(--accent); font-size: 0.8rem; }
+.planning-pagination, .archive-pagination, .project-list__pagination { height: 3.1rem; min-height: 3.1rem; padding: 0 1.1rem; border-top: 1px solid var(--line); font-size: 0.8rem; }
+.planning-pagination button, .archive-pagination button, .project-list__pagination button { min-height: 1.8rem; min-width: 1.8rem; font-size: 0.8rem; }
+.planning-pagination .ui-combobox__control, .archive-pagination .ui-combobox__control { min-height: 1.8rem; height: 1.8rem; font-size: 0.8rem; }
+.planning-pagination button[aria-current=page], .archive-pagination button[aria-current=page] { background: var(--accent); color: var(--on-accent); }
+.task-drawer-layer { z-index: 50; justify-content: center; align-items: center; padding: 4.5rem 1.4rem 2.5rem; }
+.task-drawer-backdrop, .task-drawer-backdrop:hover:not(:disabled), .task-drawer-backdrop:disabled { background: #0b150e38; backdrop-filter: blur(2px); }
+.task-drawer { --task-drawer-offset: translateY(0.8rem); width: 50rem; height: auto; max-height: calc(100dvh - 7rem); border: 1px solid var(--line); border-radius: 1.1rem; background: var(--surface); box-shadow: 0 1.5rem 5rem #0003; animation-duration: 180ms; }
+.task-drawer__header { min-height: 4.1rem; padding: 1rem 1.6rem; border-bottom: 1px solid var(--line); flex-shrink: 0; }
+.task-drawer__header h2 { font-size: 1.45rem; }
+.task-drawer__header p { font-size: 0.8rem; color: var(--muted); margin-top: 0.25rem; }
+.task-drawer__close { min-width: 1.6rem; height: 1.6rem; align-items: center; justify-content: center; }
+.task-drawer__close svg { width: 1.25rem; height: 1.25rem; }
+.task-create-form__body { display: flex; flex-direction: column; padding: 1.3rem 1.6rem 1.4rem; gap: 0.8rem; }
+.route-task-form-fields { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 1.1rem 1.2rem; }
+.route-task-form-fields > .task-create-field, .route-task-form-fields > .task-create-fieldset--project { grid-column: 1 / -1; }
+.route-task-form-fields > .task-create-field:nth-child(1) { order: 0; }
+.route-task-form-fields > .task-create-field:nth-child(2) { order: 1; }
+.task-create-fieldset--project { order: 2; }
+.task-create-fieldset--plan { order: 3; }
+.task-create-fieldset--deadline { order: 4; }
+.task-create-fieldset--recurrence { order: 5; }
+.task-create-fieldset--status { order: 6; }
+.route-task-form-fields--recurring > .task-create-fieldset--recurrence { grid-column: 1 / -1; }
+.task-create-field > span, .task-create-fieldset legend { font-size: 0.85rem; }
+.task-create-field input, .task-create-field textarea { font-size: 0.95rem; background: var(--bg); border-radius: 0.5rem; min-height: 2.5rem; padding: 0.5rem 0.75rem; }
+.task-create-field textarea { min-height: 3.8rem; height: 3.8rem; }
+.task-create-fieldset legend { margin-bottom: 0.45rem; }
+.task-project-inputs { display: grid; grid-template-columns: 1fr 1fr; gap: 1.2rem; }
+.task-create-fieldset--project > legend { display: none; }
+.task-create-field__note { font-size: 0.7rem; }
+.task-create-fieldset .ui-combobox__control { background: var(--bg); min-height: 2.5rem; height: 2.5rem; }
+.task-plan-inputs { display: grid; grid-template-columns: minmax(0,1fr) 5.9rem; gap: 0.5rem; }
+.task-calendar-input .date-picker__trigger { height: 2.5rem; min-height: 2.5rem; padding: 0 0.6rem; font-size: 0.9rem; background: var(--bg); }
+.task-date-input { height: 2.5rem; min-height: 2.5rem; background: var(--bg); border-color: var(--line); border-radius: 0.5rem; padding: 0 0.5rem; }
+.task-date-input input { min-height: 0; padding: 0; font-size: 0.85rem; background: transparent; }
+.task-date-input > svg { display: none; }
+.task-calendar-input__clear { background: transparent; top: 0.65rem; }
+.task-date-shortcuts { margin-bottom: 0.4rem; display: flex; gap: 0.4rem; }
+.task-date-shortcuts button { font-size: 0.7rem; padding: 0.2rem 0.5rem; border-radius: 0.4rem; }
+.task-date-shortcut--active { background: var(--selected); color: var(--accent); border-color: var(--accent); }
+.task-create-fieldset--deadline .task-plan-inputs { margin-top: 1.75rem; }
+.task-status-options { flex-wrap: nowrap; gap: 0; border: 1px solid var(--line); border-radius: 0.55rem; overflow: hidden; height: 2.5rem; }
+.task-status-option { border: 0; border-radius: 0; flex: 1; justify-content: center; padding: 0 0.8rem; font-size: 0.9rem; background: var(--bg); }
+.task-status-option .ui-radio__indicator { display: none; }
+.task-status-option[data-selected], .task-status-option[data-hovered] { background: var(--selected); color: var(--accent); }
+.task-status-option[data-focus-visible] { outline: 2px solid var(--accent); outline-offset: -0.2rem; }
+.task-recurrence-inputs { display: grid; grid-template-columns: 7rem 1fr; align-items: end; gap: 1rem; }
+.task-recurrence-dates { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+.task-recurrence-dates .task-create-field { gap: 0.45rem; }
+.task-create-form__footer { display: flex; justify-content: flex-end; gap: 0.7rem; padding: 0.9rem 1.6rem; flex-shrink: 0; min-height: 4.2rem; }
+.task-create-button { min-height: 2.45rem; font-size: 0.9rem; padding: 0 1.2rem; border-radius: 0.6rem; }
+.task-create-button--primary { min-height: 2.45rem; font-size: 0.9rem; }
+.task-details { width: 50rem; }
+.task-details__header { min-height: 3.2rem; padding: 0.9rem 1.6rem; font-size: 0.9rem; }
+.task-details__body { padding: 1.2rem 1.6rem; }
+.task-details__intro h2 { font-size: 1.45rem; margin: 0 0 1rem; }
+.task-details__description { font-size: 0.95rem; color: var(--muted); }
+.task-details__meta { font-size: 0.9rem; }
+.task-details__meta dd { font-size: 0.85rem; overflow-wrap: anywhere; }
+.task-details__actions { padding: 0.9rem 1.6rem; }
+.task-details-action { font-size: 0.9rem; }
+.task-details-action--primary { background: var(--accent); color: var(--on-accent); border-color: var(--accent); }
+.task-details__status, .planning-status { background: var(--selected); color: var(--accent); border-color: var(--line); }
+.date-picker__popover { width: 19rem; }
+.date-picker__popover .rdp-root { --rdp-accent-background-color: var(--selected); --rdp-accent-color: var(--accent); --rdp-day-height: 2.1rem; --rdp-day-width: 2.3rem; --rdp-day_button-height: 1.9rem; --rdp-day_button-width: 1.9rem; }
+.date-picker__popover .rdp-weekday, .date-picker__popover .rdp-day_button { background: transparent; color: var(--ink); font-size: 0.75rem; }
+.date-picker__popover .rdp-selected .rdp-day_button, .date-picker__popover .rdp-selected .rdp-day_button:hover:not(:disabled) { background: var(--accent); color: var(--on-accent); }
+.date-picker__popover .rdp-today:not(.rdp-selected) .rdp-day_button { background: var(--selected); color: var(--accent); }
+.date-picker__popover .rdp-chevron { fill: var(--muted); }
+.date-picker__combobox .ui-combobox__control { min-height: 1.8rem; height: 1.8rem; font-size: 0.7rem; }
+.date-picker__footer button { font-size: 0.75rem; }
+.projects-page { gap: 0; height: 100%; }
+.projects-toolbar { height: 3.9rem; padding-bottom: 0.9rem; gap: 0.8rem; }
+.projects-search { width: 27rem; flex: 0 0 27rem; height: 2.5rem; padding: 0 0.8rem; gap: 0.6rem; border-radius: 0.55rem; background: var(--surface); font-size: 0.9rem; }
+.projects-search input { font-size: 0.9rem; }
+.projects-search:focus-within { outline: 2px solid var(--accent); outline-offset: 2px; }
+.projects-tabs, .project-view-switch { border-radius: 0.55rem; background: var(--surface); }
+.projects-tabs button, .project-view-switch button { min-height: 2.5rem; height: 2.5rem; padding: 0 1.1rem; background: transparent; font-size: 0.9rem; }
+.projects-tabs button.active, .project-view-switch button.active { color: var(--accent); background: var(--selected); box-shadow: none; }
+.projects-toolbar > .projects-sort.ui-combobox { width: 13rem; flex: 0 0 13rem; margin-left: auto; }
+.projects-sort .ui-combobox__control { height: 2.5rem; }
+.projects-grid { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 1.2rem; padding: 0.2rem 0; margin-top: 0.9rem; align-content: start; }
+.project-card { border-radius: 1rem; padding: 1.4rem; min-height: 15.1rem; background: var(--surface); }
+.project-card__heading > span { width: 2.8rem; height: 2.8rem; border-radius: 0.7rem; border: 1px solid var(--line); background: var(--selected); flex-shrink: 0; }
+.project-card__heading h2 { font-size: 1.4rem; margin: 2px 0 0.4rem; overflow-wrap: anywhere; }
+.project-card__heading > div { min-width: 0; }
+.project-card__heading p { font-size: 0.9rem; line-height: 1.5; overflow-wrap: anywhere; }
+.project-card__progress { margin-top: 1.7rem; display: block; position: relative; color: var(--muted); }
+.project-card__progress > div { height: 0.35rem; background: var(--line); }
+.project-card__progress > div span { background: var(--accent); }
+.project-card__progress strong { position: absolute; right: 0; top: 1.05rem; font-size: 0.9rem; font-weight: 400; }
+.project-card__count { font-size: 0.9rem; margin-top: 0.7rem; }
+.project-card footer { margin-top: 1.2rem; padding-top: 0.9rem; font-size: 0.85rem; border-color: var(--line); }
+.project-card footer button { font-size: 0.9rem; background: transparent; color: var(--accent); }
+.route-projects-note { margin-top: auto; padding-top: 1.2rem; color: var(--muted); font-size: 0.85rem; min-height: 2.3rem; flex-shrink: 0; }
+.route-content > .projects-page, .route-content > .project-page { height: 100%; }
+.project-page { gap: 0; }
+.project-page__header { min-height: 6.6rem; height: 6.6rem; align-items: center; }
+.project-page__header p { margin-bottom: 0.4rem; font-size: 0.8rem; }
+.project-page__header span { margin-top: 0.35rem; font-size: 0.85rem; }
+.project-icon-button { min-width: 2.5rem; width: auto; height: 2.6rem; padding: 0 1.2rem; gap: 0.5rem; display: flex; font-size: 1rem; border-radius: 0.6rem; background: var(--surface); }
+.project-page__header > div:last-child { gap: 1.2rem; }
+.project-toolbar { min-height: 3.9rem; height: 3.9rem; padding-bottom: 0.9rem; grid-template-columns: max-content minmax(11rem,23.5rem) max-content; gap: 0.8rem; overflow: visible; }
+.project-toolbar__filters { margin-left: auto; gap: 0.8rem; }
+.project-toolbar .ui-combobox__control { height: 2.5rem; }
+.project-toolbar__filters > .ui-combobox { width: 9rem; }
+.project-date-filter { width: 11.9rem; grid-template-columns: minmax(0,1fr) 2.5rem; gap: 0.4rem; }
+.project-date-picker, .project-date-picker .date-picker__trigger { width: 2.5rem; height: 2.5rem; }
+.project-board { gap: 0.9rem; padding-bottom: 0; }
+.project-column { flex: 1 0 0; width: auto; min-width: 14.25rem; background: var(--lane); border-color: var(--line); border-radius: 0.9rem; }
+.project-column > header { height: 3.3rem; min-height: 3.3rem; padding: 0 0.9rem; border-color: var(--line); gap: 0.4rem; }
+.project-column > header h2 { font-size: 1.05rem; overflow-wrap: anywhere; }
+.project-column > header h2 span { font-size: 0.85rem; color: var(--muted); }
+.project-column__tasks { padding: 0.7rem; gap: 0.6rem; }
+.project-task-card { background: var(--surface); border: 1px solid var(--line); border-radius: 0.65rem; box-shadow: none; padding: 0; }
+.project-task-card__content { padding: 0.8rem; gap: 0.7rem; background: transparent; }
+.project-task-card__content strong { font-size: 1rem; line-height: 1.35; font-weight: 400; overflow-wrap: anywhere; }
+.project-task-card__content span, .project-task-card__content small { font-size: 0.75rem; color: var(--muted); }
+.project-task-card__content small { color: var(--warning); }
+.project-task-card__handle { background: transparent; color: var(--muted); }
+.project-task-card:hover { box-shadow: none; border-color: var(--accent); }
+.project-column__add { margin: 0 0.7rem 0.8rem; padding: 0.65rem 0; font-size: 0.9rem; border: 1px dashed var(--line); border-radius: 0.5rem; background: transparent; color: var(--accent); }
+.project-column__empty { font-size: 0.85rem; color: var(--muted); }
+.project-list-panel { background: var(--surface); border-radius: 1rem; border-color: var(--line); }
+.project-list-table { font-size: 0.95rem; }
+.project-list-table th { font-size: 0.8rem; height: 2.9rem; background: var(--surface); }
+.project-list-table td { min-height: 3.2rem; height: 3.2rem; padding: 0.5rem 0.9rem; }
+.project-list-table td:nth-child(2) button { font-size: 1.05rem; overflow-wrap: anywhere; }
+.project-list-table td:nth-child(3) span { color: var(--ink); background: transparent; font-size: 0.9rem; padding: 0; }
+.project-list-table tr.overdue { background: transparent; }
+.project-list-table tr.overdue td:nth-child(5) { color: var(--danger); }
+.project-list-bulk { min-height: 3.4rem; padding: 0.6rem 1.2rem; background: var(--selected); gap: 1.1rem; font-size: 0.9rem; }
+.project-list-bulk button { background: transparent; border: 0; color: var(--accent); font-size: 0.85rem; }
+.project-list-bulk .ui-combobox__control { background: var(--surface); height: 2.1rem; min-height: 2.1rem; }
+.project-list-pagination { min-height: 3.1rem; padding: 0 1.1rem; font-size: 0.8rem; }
+.project-list-pagination .ui-combobox__control { height: 1.8rem; min-height: 1.8rem; font-size: 0.8rem; }
+.route-project-create { width: 47rem; }
+.route-project-create__fields { border: 0; margin: 0; padding: 0; min-width: 0; display: grid; gap: 1rem; }
+.route-stages-heading { display: flex; justify-content: space-between; align-items: center; gap: 0.8rem; }
+.route-stages-heading h3 { font-size: 1.05rem; }
+.route-stages-heading span, .route-form-note { font-size: 0.7rem; color: var(--muted); line-height: 1.5; }
+.route-stage-drafts { display: grid; gap: 0.4rem; }
+.route-stage-draft { display: flex; gap: 0.6rem; align-items: center; }
+.route-stage-draft > input { flex: 1; height: 2.05rem; padding: 0 0.6rem; background: var(--bg); border-radius: 0.4rem; font-size: 0.9rem; }
+.route-stage-draft > button { width: 2rem; height: 2rem; display: grid; place-items: center; border: 0; background: transparent; color: var(--muted); }
+.route-stage-draft .ui-checkbox { width: 9rem; font-size: 0.8rem; color: var(--muted); }
+.route-stage-draft .ui-checkbox[data-selected] { color: var(--accent); }
+.route-stage-order { display: flex; width: 2.4rem; }
+.route-stage-order button { width: 1.2rem; height: 1.6rem; display: grid; place-items: center; border: 0; background: transparent; }
+.route-stage-add { display: flex; align-items: center; gap: 0.6rem; padding-left: 3rem; }
+.route-stage-add input { flex: 1; min-width: 0; height: 2.5rem; padding: 0 0.6rem; font-size: 0.85rem; background: var(--bg); }
+.route-stage-add button { height: 2.5rem; display: flex; align-items: center; gap: 0.4rem; padding: 0 0.8rem; font-size: 0.85rem; }
+.project-settings { width: 62.5rem; max-height: calc(100dvh - 8rem); }
+.project-settings .task-create-form__body { display: grid; grid-template-columns: 23rem minmax(0,1fr); gap: 1.2rem 1.8rem; }
+.project-settings__section { min-width: 0; border: 0; padding: 0; align-content: start; }
+.project-settings__section:nth-child(2) { grid-column: 2; grid-row: 1 / span 2; }
+.project-settings__danger { grid-column: 1; border-top: 1px solid var(--line); padding-top: 1.2rem; }
+.project-settings__section > h3 { font-size: 1.1rem; }
+.project-settings__section > p { font-size: 0.75rem; line-height: 1.5; }
+.project-settings__columns { border: 0; overflow: visible; }
+.project-settings__column { min-height: 3.3rem; background: transparent; gap: 0.5rem; padding: 0; }
+.project-settings__column-name { font-size: 0.9rem; color: var(--ink); }
+.project-settings__make-completion { font-size: 0.65rem; }
+.project-settings__completion { background: transparent; color: var(--accent); padding: 0; font-size: 0.65rem; }
+.project-settings__column-edit input { height: 2.1rem; font-size: 0.9rem; background: var(--bg); }
+.project-settings__add input { height: 2.5rem; font-size: 0.85rem; background: var(--bg); }
+.project-settings__add button { font-size: 0.85rem; background: var(--surface); border: 1px solid var(--line); }
+.project-settings__danger > button { justify-content: flex-start; height: 2.35rem; padding: 0 0.8rem; border-color: var(--line); color: var(--muted); background: var(--surface); font-size: 0.85rem; }
+.project-settings__danger > button.danger { color: var(--danger); border-color: var(--danger); }
+.project-settings__confirm { background: var(--danger-bg); border-color: var(--danger); font-size: 0.85rem; }
+.project-settings .task-create-error { grid-column: 1 / -1; }
+.archive-page { gap: 0; }
+.archive-toolbar { min-height: 3.9rem; padding-bottom: 0.9rem; gap: 0.8rem; }
+.archive-search { width: 27rem; height: 2.5rem; padding: 0 0.8rem; background: var(--surface); border-radius: 0.55rem; }
+.archive-search input { font-size: 0.9rem; }
+.archive-sort .ui-combobox { width: 14rem; }
+.archive-sort .ui-combobox__control { height: 2.5rem; }
+.archive-sort > span { display: none; }
+.archive-table-card { min-height: 0; background: var(--surface); border-color: var(--line); border-radius: 1rem; box-shadow: none; }
+.archive-table { font-size: 0.95rem; }
+.archive-table th { font-size: 0.8rem; height: 2.9rem; background: var(--surface); }
+.archive-table td { height: 4rem; }
+.archive-task-title button { font-size: 1.05rem; white-space: normal; overflow-wrap: anywhere; }
+.archive-date { font-size: 0.9rem; color: var(--muted); }
+.archive-action { font-size: 0.85rem; background: transparent; border: 0; }
+.archive-delete-confirm, .archive-delete-confirm > button { font-size: 0.75rem; }
+.archive-page .date-picker__label { display: none; }
+.calendar-page { grid-template-columns: minmax(0,1fr) 24.1rem; grid-template-rows: 4.8rem 3.9rem minmax(0,1fr); gap: 0 1rem; }
+.calendar-page__header { grid-column: 1 / -1; }
+.calendar-toolbar { grid-column: 1 / -1; padding-bottom: 0.9rem; gap: 0.8rem; margin: 0; min-height: 0; }
+.calendar-view-switch { border-radius: 0.55rem; height: 2.5rem; background: var(--surface); border: 1px solid var(--line); overflow: hidden; }
+.calendar-view-switch button { padding: 0 1.1rem; height: 2.5rem; font-size: 0.9rem; border: 0; background: transparent; border-radius: 0; }
+.calendar-view-switch__active { color: var(--accent); background: var(--selected) !important; }
+.calendar-toolbar__today { height: 2.5rem; padding: 0 1.2rem; font-size: 0.9rem; }
+.calendar-toolbar__navigation { gap: 0.5rem; }
+.calendar-toolbar__navigation button { height: 2.5rem; width: 2.5rem; border-radius: 0.55rem; }
+.calendar-toolbar__picker .date-picker__label { display: none; }
+.calendar-toolbar__range { font-size: 1.05rem; color: var(--ink); font-weight: 500; }
+.calendar-board { grid-row: 3; background: var(--surface); border-color: var(--line); border-radius: 1rem; box-shadow: none; }
+.calendar-selected-day { grid-column: 2; grid-row: 3; background: var(--context); border-color: var(--line); border-radius: 1rem; padding: 0 1.2rem 1.2rem; }
+.calendar-selected-day header { background: var(--context); padding: 1.2rem 0; align-items: flex-start; }
+.calendar-selected-day header > span { font-size: 1.3rem; }
+.calendar-selected-day h2 { font-size: 0.85rem; }
+.calendar-day-group { padding: 0.9rem 0; }
+.calendar-day-group h3 { font-size: 1rem; margin-bottom: 0.35rem; }
+.calendar-side-item { font-size: 0.9rem; padding: 0.6rem 0; gap: 0.7rem; }
+.calendar-side-item__time { background: transparent; color: var(--muted); font-size: 0.85rem; padding: 0; width: 2.65rem; flex-shrink: 0; }
+.calendar-side-item__copy small { font-size: 0.7rem; display: block; margin-top: 0.15rem; }
+.calendar-selected-day > a { font-size: 0.9rem; }
+.calendar-selected-day__empty { font-size: 0.85rem; }
+.calendar-week-day { overflow-y: auto; }
+.calendar-day-heading { height: 4.5rem; flex-direction: column; gap: 0.4rem; font-size: 0.8rem; color: var(--muted); background: transparent; }
+.calendar-day-heading strong { height: 2rem; width: 2rem; border-radius: 50%; display: grid; place-items: center; font-size: 1.2rem; color: var(--ink); font-weight: 550; }
+.calendar-day--selected { background: var(--selected); }
+.calendar-day--selected .calendar-day-heading, .calendar-day--selected .calendar-day-heading:hover:not(:disabled) { background: transparent; color: var(--muted); }
+.calendar-day--selected .calendar-day-heading strong { background: var(--accent); color: var(--on-accent); }
+.calendar-all-day { min-height: 0; padding: 0.7rem 0.6rem; font-size: 0.75rem; border: 0; }
+.calendar-all-day:has(.calendar-item) { border-bottom: 1px solid var(--line); }
+.calendar-all-day:not(:has(.calendar-item)) { display: none; }
+.calendar-lane-label { font-size: 0.7rem; margin-bottom: 0.5rem; }
+.calendar-timed-items { padding: 0.5rem 0.6rem; gap: 0; }
+.calendar-item { border-radius: 0; padding: 0.7rem 0.25rem; background: transparent; border-bottom: 1px solid var(--line); font-size: 0.85rem; line-height: 1.4; }
+.calendar-item:hover:not(:disabled), .calendar-month .calendar-item:hover:not(:disabled) { background: var(--hover); }
+.calendar-item__time { font-size: 0.75rem; color: var(--muted); }
+.calendar-item__main { gap: 0.3rem; }
+.calendar-item__title { color: var(--ink); }
+.calendar-item__recurrence-label { margin-top: 0.35rem; font-size: 0.7rem; }
+.calendar-item--deadline { background: transparent; color: var(--warning); }
+.calendar-item--deadline:hover:not(:disabled) { background: var(--selected); }
+.calendar-item--deadline .calendar-item__title, .calendar-item--deadline .calendar-item__time { color: var(--warning); }
+.calendar-item__eyebrow { font-size: 0.7rem; }
+.calendar-month { grid-template-rows: 2.3rem; grid-auto-rows: minmax(5rem,1fr); }
+.calendar-month__weekday { font-size: 0.85rem; font-weight: 400; color: var(--muted); padding: 0.6rem 0.2rem; }
+.calendar-month-day { padding: 0.6rem; }
+.calendar-month-day--outside { background: var(--surface); color: var(--faint); }
+.calendar-month-day__number { width: 1.6rem; height: 1.6rem; border-radius: 50%; display: grid; place-items: center; font-size: 0.9rem; font-weight: 400; }
+.calendar-month-day.calendar-day--selected { background: var(--selected); box-shadow: none; }
+.calendar-month-day.calendar-day--selected .calendar-month-day__number { background: var(--accent); color: var(--on-accent); }
+.calendar-month .calendar-item { font-size: 0.7rem; border: 0; line-height: 1.35; }
+.calendar-month .calendar-item__title { color: var(--ink); }
+.calendar-month .calendar-item__main { gap: 0.2rem; }
+.calendar-more, .calendar-side-more { font-size: 0.7rem; margin-top: 0.4rem; }
+.route-task--no-time { padding-left: 2.9rem; }
+.route-task--no-time .route-task__details { margin-left: 2.7rem; }
+.route-context { scrollbar-width: thin; scrollbar-color: var(--faint) transparent; }
+.route-side-section:last-child { margin-bottom: 0; }
+.task-date-shortcut--active { background: var(--selected); }
+.project-task-card { display: grid; grid-template-columns: 1.3rem minmax(0,1fr) 1.2rem; align-items: start; gap: 0.4rem; padding: 0.8rem; }
+.project-task-card .route-board-check .ui-checkbox__indicator { height: 1.2rem; width: 1.2rem; border-radius: 50%; }
+.project-task-card .route-board-check { padding-top: 2px; }
+.project-task-card__content { padding: 0; }
+.project-task-card__content p { font-size: 0.8rem; color: var(--muted); line-height: 1.5; margin: 0; }
+.project-task-card__handle { width: 1.2rem; padding: 0; height: 1.6rem; }
+.route-board-error { color: var(--danger); font-size: 0.7rem; grid-column: 1 / -1; }
+.route-project-row--expanded { background: var(--selected); }
+.route-project-inline > td { padding: 0 1.3rem 0.9rem 4.6rem; background: var(--selected); }
+.route-project-inline .route-task__details { margin: 0; }
+.route-inline-more { border: 0; background: transparent; color: var(--accent); font-size: 0.75rem; margin-top: 0.6rem; padding: 0.2rem 0; }
+.planning-pagination .ui-combobox__control, .archive-pagination .ui-combobox__control, .project-list-pagination .ui-combobox__control { display: flex; width: 100%; min-width: 8rem; align-items: center; justify-content: space-between; }
+.planning-pagination .ui-combobox, .archive-pagination .ui-combobox, .project-list-pagination .ui-combobox { width: 9rem; }
+.ui-combobox__control:focus-visible { outline: 2px solid var(--accent); outline-offset: 0.15rem; border-color: var(--accent); }
+.route-empty > p { margin-top: 0.6rem; font-size: 0.9rem; }
+.route-empty > button { margin-top: 1.1rem; padding: 0.6rem 1.2rem; background: var(--accent); border-color: var(--accent); color: var(--on-accent); border-radius: 0.6rem; font-size: 0.9rem; }
+.today-error, .planning-error, .archive-error, .calendar-error { background: var(--danger-bg); border-color: var(--danger); font-size: 0.9rem; }
+.today-error p, .planning-error p, .archive-error p, .calendar-error p { font-size: 0.85rem; }
+.today-loading, .planning-loading, .archive-loading, .calendar-loading, .task-edit-state, .projects-state { font-size: 0.9rem; }
+.projects-state strong { font-size: 1.2rem; }
+.project-settings__column-name { white-space: normal; overflow-wrap: anywhere; }
+.task-create-warning { color: var(--warning); border-color: var(--warning); background: var(--selected); font-size: 0.8rem; }
+.task-edit-delete { margin-right: auto; align-self: center; }
+.task-edit-delete__trigger { font-size: 0.85rem; }
+.task-create-form__footer:has(.task-edit-delete__confirm) { flex-wrap: wrap; }
+.task-edit-delete__confirm { max-width: 23rem; font-size: 0.8rem; }
+.project-card footer > span { font-size: 0.85rem; }
+.project-card footer button { border: 0; padding: 0; }
+.route-calendar-side-row { display: flex; align-items: flex-start; gap: 0.7rem; flex-wrap: wrap; }
+.route-calendar-side-row > .ui-checkbox { padding-top: 0.75rem; }
+.route-calendar-side-row .ui-checkbox__indicator { width: 1.35rem; height: 1.35rem; }
+.route-calendar-side-row .calendar-side-item { flex: 1; min-width: 0; }
+.calendar-selected-day header { flex-direction: column; gap: 0.4rem; }
+.project-board__error { background: var(--danger-bg); color: var(--danger); border-color: var(--danger); font-size: 0.8rem; }
+.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; border: 0; }
+.archive-toolbar { margin-bottom: 0; }
+.archive-status-filter { width: 9rem; }
+.archive-filters summary { height: 2.5rem; font-size: 0.8rem; }
+.archive-table th:first-child { width: 42%; }
+.archive-table th:nth-child(2) { width: 11%; }
+.archive-table th:nth-child(3), .archive-table th:nth-child(4) { width: 12%; }
+.archive-table th:nth-child(5) { width: 11%; }
+.archive-table th:last-child { width: 12%; }
+.archive-project { font-size: 0.85rem; }
+.archive-date { font-size: 0.85rem; }
+.route-task-form-fields--recurring { gap: 0.8rem 1.2rem; }
+.task-recurrence-inputs:not(:has(> .task-create-field)) { grid-template-columns: minmax(0,1fr); }
+.task-recurrence-dates .task-calendar-input { min-width: 0; }
+
+/* Full HD desktop with browser chrome or Windows display scaling. */
+.route-logo { width: 2.1rem; height: 2.1rem; }
+.route-brand--hero .route-logo { width: 4.9rem; height: 4.9rem; }
+@media (max-width: 1600px), (max-height: 1000px) {
+  .route-brand, .route-account { min-width: 12rem; }
+  .route-navigation { gap: .4rem; }
+  .route-navigation a { padding-inline: 1rem; }
+  .route-context { padding: .9rem; }
+  .route-filters { padding: .7rem .9rem; }
+  .route-filters > h3 { margin: .6rem 0 .4rem; }
+  .route-date-filter > header { margin: .6rem 0; }
+  .route-calendar--filter { padding-top: .5rem; }
+  .route-calendar--filter .rdp-root { --rdp-day-height: 2rem; --rdp-day_button-height: 1.85rem; --rdp-day_button-width: 1.85rem; }
+  .route-calendar--filter .rdp-month_caption { height: 2rem; margin-bottom: .3rem; }
+  .route-calendar--filter .rdp-nav { top: 0; }
+  .route-calendar--filter .rdp-weekday { padding-bottom: .25rem; }
+  .route-date-selection { margin-top: .5rem; padding-top: .5rem; }
+  .route-date-filter__actions { margin-top: .6rem; }
+  .route-date-filter > p { margin-top: .5rem; }
+  .route-auth__intro, .route-auth--register .route-auth__intro { padding: 1.5rem 2.5rem; display: flex; flex-direction: column; justify-content: center; }
+  .route-brand--hero { margin-bottom: 1rem; }
+  .route-auth__preview { margin-top: 1.3rem; }
+  .route-auth__example { min-height: 3.6rem; padding: .5rem; gap: .7rem; }
+  .route-auth__form-pane { padding-block: 1.5rem 3.5rem; }
+  .route-auth__form-pane > footer { bottom: 1rem; }
+  .task-drawer-layer { padding-block: 1.5rem; }
+  .task-drawer { max-height: calc(100dvh - 3rem); }
+  .project-card { min-height: 13rem; padding: 1.1rem; }
+  .project-card__progress { margin-top: 1rem; }
+  .projects-grid { gap: 1rem; margin-top: .5rem; }
+}

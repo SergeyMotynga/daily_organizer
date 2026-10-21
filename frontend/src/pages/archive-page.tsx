@@ -5,23 +5,28 @@ import {
   CalendarDays,
   Plus,
   RotateCcw,
-  Search
+  Search,
+  Trash2
 } from "lucide-react";
 
-import type { Task, TaskListParams, TaskSort } from "../entities/task/types";
+import type { Task, TaskListParams, TaskStatusCode } from "../entities/task/types";
 import { CreateTaskDrawer } from "../features/tasks/create-task-drawer";
 import { TaskDetailsDrawer } from "../features/tasks/task-details-drawer";
 import {
   useDeleteTaskMutation,
-  useTasksQuery,
+  useArchiveTasksQuery,
+  type ArchiveSort,
   useUpdateTaskMutation
 } from "../features/tasks/queries";
 import { Pagination } from "../shared/ui/pagination";
 import { DatePickerPopover } from "../shared/ui/date-picker-popover";
 import { InputGroup, InputGroupAddon, InputGroupInput } from "../shared/ui/input-group";
+import { useProjectsQuery } from "../features/projects/queries";
 import { SelectCombobox } from "../shared/ui/select-combobox";
 
-const sortOptions: { value: TaskSort; label: string }[] = [
+const sortOptions: { value: ArchiveSort; label: string }[] = [
+  { value: "archived_at_desc", label: "Сначала архивированные" },
+  { value: "archived_at_asc", label: "Давно архивированные" },
   { value: "created_at_desc", label: "Сначала новые задачи" },
   { value: "created_at_asc", label: "Сначала старые задачи" }
 ];
@@ -66,9 +71,11 @@ function ArchiveTaskRow({
   onDeleteRequest,
   onDeleteCancel,
   onDeleteConfirm,
-  onOpen
+  onOpen,
+  projectName
 }: {
   task: Task;
+  projectName: string;
   isRestoring: boolean;
   isDeleting: boolean;
   isDeleteConfirmOpen: boolean;
@@ -100,12 +107,13 @@ function ArchiveTaskRow({
   return (
     <tr>
       <td>
-        <span className="archive-task-title">
+        <span className="archive-task-title"><Archive size={22} aria-hidden="true" />
           <button type="button" title={task.title} onClick={onOpen}>
             {task.title}
           </button>
         </span>
       </td>
+      <td className="archive-project">{projectName}</td>
       <td>
         <span className={task.planned_date ? "archive-date" : "archive-date archive-date--muted"}>
           {task.planned_date ? <CalendarDays size={14} aria-hidden="true" /> : null}
@@ -171,7 +179,7 @@ function ArchiveTaskRow({
               onClick={onDeleteRequest}
               disabled={isRestoring || isDeleting}
             >
-              Удалить
+              <Trash2 size={20} aria-hidden="true" /><span className="sr-only">Удалить</span>
             </button>
           </span>
         </span>
@@ -183,7 +191,11 @@ function ArchiveTaskRow({
 export function ArchivePage() {
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
-  const [sort, setSort] = useState<TaskSort>("created_at_desc");
+  const [sort, setSort] = useState<ArchiveSort>("archived_at_desc");
+  const [statusFilter, setStatusFilter] = useState("");
+  const activeProjects = useProjectsQuery(false);
+  const archivedProjects = useProjectsQuery(true);
+  const projectNames = new Map([...(activeProjects.data?.items ?? []), ...(archivedProjects.data?.items ?? [])].map((project) => [project.id, project.title]));
   const [limit, setLimit] = useState(20);
   const [offset, setOffset] = useState(0);
   const [plannedDate, setPlannedDate] = useState("");
@@ -203,15 +215,15 @@ export function ArchivePage() {
 
   const queryParams: TaskListParams = {
     preset: "all",
-    statuses: ["todo", "done"],
+    statuses: statusFilter ? [statusFilter as TaskStatusCode] : ["todo", "done"],
     archived: true,
     planned_date: plannedDate || undefined,
     q: debouncedSearch,
-    sort,
+    sort: sort.startsWith("archived_at") ? "created_at_desc" : sort as TaskListParams["sort"],
     limit,
     offset
   };
-  const tasksQuery = useTasksQuery(queryParams);
+  const tasksQuery = useArchiveTasksQuery(queryParams, sort);
   const total = tasksQuery.data?.pagination.total ?? 0;
   const restoringTaskId = restoreTaskMutation.isPending
     ? restoreTaskMutation.variables.taskId
@@ -224,7 +236,7 @@ export function ArchivePage() {
     }
   }, [limit, offset, total]);
 
-  function changeSort(value: TaskSort) {
+  function changeSort(value: ArchiveSort) {
     setSort(value);
     setOffset(0);
   }
@@ -252,7 +264,7 @@ export function ArchivePage() {
         <header className="archive-page__header">
           <div>
             <h1>Архив</h1>
-            <p>Завершённые и скрытые задачи</p>
+            <p>Задачи, скрытые из плана и календаря</p>
           </div>
           <button
             className="archive-page__new-task"
@@ -271,13 +283,14 @@ export function ArchivePage() {
               aria-label="Поиск в архиве по названию и описанию"
               value={search}
               onChange={(event) => setSearch(event.target.value)}
-              placeholder="Поиск по названию и описанию"
+              placeholder="Поиск в архиве"
             />
             <InputGroupAddon aria-hidden="true"><Search size={16} /></InputGroupAddon>
             {search.trim() ? <InputGroupAddon align="inline-end" className="ui-input-group__results" aria-live="polite">
               Найдено: {tasksQuery.isFetching ? "…" : tasksQuery.data ? total : "—"}
             </InputGroupAddon> : null}
           </InputGroup>
+          <SelectCombobox className="archive-status-filter" label="Статус в архиве" value={statusFilter} options={[{value:"",label:"Все статусы"},{value:"todo",label:"Активные"},{value:"done",label:"Выполненные"}]} onChange={(value) => {setStatusFilter(value);setOffset(0);}} />
           <details className="archive-filters">
             <summary>Фильтры</summary>
             <div className="archive-filters__body">
@@ -287,7 +300,7 @@ export function ArchivePage() {
           </details>
           <div className="archive-sort">
             <span>Сортировка</span>
-            <SelectCombobox label="Сортировка" value={sort} options={sortOptions} onChange={(value) => changeSort(value as TaskSort)} />
+            <SelectCombobox label="Сортировка" value={sort} options={sortOptions} onChange={(value) => changeSort(value as ArchiveSort)} />
           </div>
         </div>
 
@@ -328,9 +341,10 @@ export function ArchivePage() {
                       <th>
                         <span className="archive-table__heading-task">Задача</span>
                       </th>
-                      <th>Когда была запланирована</th>
+                      <th>Проект</th>
+                      <th>План</th>
                       <th>Дедлайн</th>
-                      <th>Архивировано</th>
+                      <th>В архиве</th>
                       <th>Действия</th>
                     </tr>
                   </thead>
@@ -339,6 +353,7 @@ export function ArchivePage() {
                       <ArchiveTaskRow
                         key={task.id}
                         task={task}
+                        projectName={task.project_id ? projectNames.get(task.project_id) ?? "Проект" : "Личное"}
                         isRestoring={restoringTaskId === task.id}
                         isDeleting={deletingTaskId === task.id}
                         isDeleteConfirmOpen={deleteConfirmTaskId === task.id}

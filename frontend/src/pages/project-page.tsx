@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState, type RefObject } from "react";
+import { Fragment, useEffect, useMemo, useRef, useState, type RefObject } from "react";
 import { arrayMove } from "@dnd-kit/helpers";
 import {
   DragDropProvider,
@@ -15,6 +15,8 @@ import type { ProjectColumn } from "../entities/project/types";
 import type { Task, TaskStatusCode } from "../entities/task/types";
 import { CreateTaskDrawer } from "../features/tasks/create-task-drawer";
 import { TaskDetailsDrawer } from "../features/tasks/task-details-drawer";
+import { TaskInlineDetails } from "../features/tasks/task-list-item";
+import { useUpdateTaskMutation } from "../features/tasks/queries";
 import { ProjectSettingsDrawer } from "../features/projects/project-settings-drawer";
 import {
   useMoveProjectTaskMutation,
@@ -38,10 +40,13 @@ function formatDate(value: string | null, time: string | null): string {
 }
 
 function ProjectTaskCard({ task, column, index, disabled, onOpen }: { task: Task; column: ProjectColumn; index: number; disabled: boolean; onOpen: () => void }) {
+  const update = useUpdateTaskMutation();
   const sortable = useSortable({ id: task.id, index, group: column.id, data: { taskId: task.id, columnId: column.id, task }, disabled });
   return <article ref={sortable.ref} data-task-id={task.id} className={`project-task-card${sortable.isDragging ? " project-task-card--dragging" : ""}${sortable.isDropping ? " project-task-card--dropping" : ""}`}>
-    <button className="project-task-card__content" type="button" onClick={onOpen}><strong>{task.title}</strong><span><CalendarDays size={15} />{formatDate(task.planned_date, task.planned_time)}</span>{task.deadline_date ? <small>Дедлайн: {formatDate(task.deadline_date, task.deadline_time)}</small> : null}</button>
+    <Checkbox className="route-board-check" aria-label={`Выполнить: ${task.title}`} isSelected={task.status === "done"} isDisabled={disabled || update.isPending || task.recurrence_type_code !== "none"} onChange={(checked) => update.mutate({taskId:task.id,payload:{status:checked ? "done" : "todo"}})} />
+    <button className="project-task-card__content" type="button" onClick={onOpen}><strong>{task.title}</strong>{task.description ? <p>{task.description}</p> : null}<span><CalendarDays size={15} />{formatDate(task.planned_date, task.planned_time)}</span>{task.deadline_date ? <small>Дедлайн: {formatDate(task.deadline_date, task.deadline_time)}</small> : null}</button>
     <button ref={sortable.handleRef} className="project-task-card__handle" type="button" aria-label={`Переместить задачу ${task.title}`}><GripVertical size={17} /></button>
+    {update.isError ? <p className="route-board-error" role="alert">Не удалось изменить задачу.</p> : null}
   </article>;
 }
 
@@ -163,8 +168,9 @@ function ProjectBoard({ projectId, columns, tasks, onOpenTask, onCreateTask }: {
       }}>
         {(source) => {
           const task = source.data.task as Task;
-          return <div className={`project-task-card project-task-card--overlay${source.isDropping ? " project-task-card--dropping" : ""}`} style={{ width: "100%", height: "100%", padding: 0, gap: 0, gridTemplateColumns: "minmax(0,1fr) 28px" }}>
-            <div className="project-task-card__content"><strong>{task.title}</strong><span><CalendarDays size={15} />{formatDate(task.planned_date, task.planned_time)}</span>{task.deadline_date ? <small>Дедлайн: {formatDate(task.deadline_date, task.deadline_time)}</small> : null}</div>
+          return <div className={`project-task-card project-task-card--overlay${source.isDropping ? " project-task-card--dropping" : ""}`} style={{ width: "100%", height: "100%" }}>
+            <span className="route-board-check ui-checkbox" aria-hidden="true"><span className="ui-checkbox__indicator">{task.status === "done" ? <CheckCircle2 size={18} /> : null}</span></span>
+            <div className="project-task-card__content"><strong>{task.title}</strong>{task.description ? <p>{task.description}</p> : null}<span><CalendarDays size={15} />{formatDate(task.planned_date, task.planned_time)}</span>{task.deadline_date ? <small>Дедлайн: {formatDate(task.deadline_date, task.deadline_time)}</small> : null}</div>
             <div className="project-task-card__handle" style={{ display: "grid", placeItems: "center" }}><GripVertical size={17} /></div>
           </div>;
         }}
@@ -176,14 +182,21 @@ function ProjectBoard({ projectId, columns, tasks, onOpenTask, onCreateTask }: {
 function ProjectList({ projectId, columns, tasks, onOpenTask }: { projectId: string; columns: ProjectColumn[]; tasks: Task[]; onOpenTask: (taskId: string) => void }) {
   const bulk = useProjectBulkMutations(projectId);
   const [selected, setSelected] = useState<string[]>([]);
+  const [expanded, setExpanded] = useState<string | null>(null);
   const [targetColumn, setTargetColumn] = useState(columns[0]?.id ?? "");
   const [limit, setLimit] = useState(20);
   const [offset, setOffset] = useState(0);
   const page = tasks.slice(offset, offset + limit);
   const allPageSelected = page.length > 0 && page.every((task) => selected.includes(task.id));
+  const pending = bulk.move.isPending || bulk.status.isPending;
+  useEffect(() => {
+    setSelected((current) => current.filter((id) => tasks.some((task) => task.id === id)));
+    if (offset >= tasks.length && offset > 0) setOffset(Math.max(0,(Math.ceil(tasks.length / limit)-1)*limit));
+  }, [tasks, offset, limit]);
   return <div className="project-list-panel">
-    {selected.length ? <div className="project-list-bulk"><strong>Выбрано: {selected.length}</strong><SelectCombobox label="Переместить в этап" value={targetColumn} onChange={setTargetColumn} options={columns.map((column) => ({ value: column.id, label: column.title }))} /><button type="button" onClick={() => bulk.move.mutate({ taskIds: selected, targetColumnId: targetColumn })}>Переместить</button><button type="button" onClick={() => bulk.status.mutate({ taskIds: selected, status: "done" })}><CheckCircle2 size={16} />Отметить выполненными</button><button type="button" onClick={() => setSelected([])}>Снять выделение</button></div> : null}
-    <div className="project-list-scroll"><table className="project-list-table"><thead><tr><th><Checkbox aria-label="Выбрать страницу" isSelected={allPageSelected} onChange={(checked) => setSelected(checked ? [...new Set([...selected, ...page.map((task) => task.id)])] : selected.filter((id) => !page.some((task) => task.id === id)))} /></th><th>Задача</th><th>Этап</th><th>Когда делать</th><th>Дедлайн</th><th>Обновлено</th></tr></thead><tbody>{page.map((task) => <tr key={task.id} className={task.deadline_date && task.deadline_date < getTodayValue() && task.status === "todo" ? "overdue" : ""}><td><Checkbox aria-label={`Выбрать ${task.title}`} isSelected={selected.includes(task.id)} onChange={(checked) => setSelected(checked ? [...selected, task.id] : selected.filter((id) => id !== task.id))} /></td><td><button type="button" onClick={() => onOpenTask(task.id)}>{task.title}</button></td><td><span>{columns.find((column) => column.id === task.project_column_id)?.title ?? "—"}</span></td><td>{formatDate(task.planned_date, task.planned_time)}</td><td>{formatDate(task.deadline_date, task.deadline_time)}</td><td>{new Intl.DateTimeFormat("ru-RU", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" }).format(new Date(task.updated_at))}</td></tr>)}</tbody></table></div>
+    {selected.length ? <div className="project-list-bulk"><strong>Выбрано: {selected.length}</strong><SelectCombobox label="Переместить в этап" value={targetColumn} onChange={setTargetColumn} isDisabled={pending} options={columns.map((column) => ({ value: column.id, label: column.title }))} /><button type="button" disabled={pending || !targetColumn} onClick={() => bulk.move.mutate({ taskIds: selected, targetColumnId: targetColumn })}>Переместить в этап</button><button type="button" disabled={pending} onClick={() => bulk.status.mutate({ taskIds: selected, status: "done" })}><CheckCircle2 size={18} aria-hidden="true" />Отметить выполненными</button><button type="button" disabled={pending} onClick={() => setSelected([])}>Снять выделение</button></div> : null}
+    {bulk.move.isError || bulk.status.isError ? <p className="project-board__error" role="alert">Не удалось применить действие. Повторяющиеся задачи нельзя переносить в завершающий этап или завершать целиком.</p> : null}
+    <div className="project-list-scroll"><table className="project-list-table"><thead><tr><th><Checkbox aria-label="Выбрать страницу" isSelected={allPageSelected} isIndeterminate={!allPageSelected && page.some((task) => selected.includes(task.id))} onChange={(checked) => setSelected(checked ? [...new Set([...selected, ...page.map((task) => task.id)])] : selected.filter((id) => !page.some((task) => task.id === id)))} /></th><th>Задача</th><th>Этап</th><th>Когда делать</th><th>Дедлайн</th><th>Обновлено</th></tr></thead><tbody>{page.map((task) => <Fragment key={task.id}><tr className={expanded === task.id ? "route-project-row--expanded" : task.deadline_date && task.deadline_date < getTodayValue() && task.status === "todo" ? "overdue" : ""}><td><Checkbox aria-label={`Выбрать ${task.title}`} isSelected={selected.includes(task.id)} onChange={(checked) => setSelected(checked ? [...selected, task.id] : selected.filter((id) => id !== task.id))} /></td><td><button type="button" aria-expanded={expanded === task.id} aria-controls={expanded === task.id ? `project-inline-${task.id}` : undefined} onClick={() => setExpanded(expanded === task.id ? null : task.id)}>{task.title}</button></td><td><span>{columns.find((column) => column.id === task.project_column_id)?.title ?? "—"}</span></td><td>{formatDate(task.planned_date, task.planned_time)}</td><td>{formatDate(task.deadline_date, task.deadline_time)}</td><td>{new Intl.DateTimeFormat("ru-RU", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" }).format(new Date(task.updated_at))}</td></tr>{expanded === task.id ? <tr className="route-project-inline"><td colSpan={6}><TaskInlineDetails task={task} id={`project-inline-${task.id}`} /><button type="button" className="route-inline-more" onClick={() => onOpenTask(task.id)}>Все действия и сведения</button></td></tr> : null}</Fragment>)}</tbody></table>{!tasks.length ? <div className="route-empty"><h2>Задачи не найдены</h2><p>Измените фильтры или добавьте задачу.</p></div> : null}</div>
     <Pagination className="project-list-pagination" total={tasks.length} label="Всего задач" limit={limit} offset={offset} onLimitChange={(value) => { setLimit(value); setOffset(0); }} onOffsetChange={setOffset} />
   </div>;
 }
@@ -221,9 +234,9 @@ export function ProjectPage() {
   if (projectQuery.isPending || tasksQuery.isPending) return <div className="projects-state">Загружаем проект…</div>;
   if (projectQuery.isError || !project) return <div className="projects-state projects-state--error"><strong>Не удалось загрузить проект</strong><Link to={appRoutePaths.projects.all}>К списку проектов</Link></div>;
   return <div className="project-page">
-    <header className="project-page__header"><div><p><Link to={appRoutePaths.projects.all}>Проекты</Link> / {project.title}</p><h1>{project.title}</h1><span>{project.description || "Без описания"}</span></div><div><button type="button" className="project-icon-button" aria-label="Настройки проекта" onClick={() => setSettingsOpen(true)}><Settings2 size={19} /></button><button type="button" className="projects-primary-button" onClick={() => setCreateColumnId(columns[0]?.id ?? "")}><Plus size={18} />Новая задача</button></div></header>
+    <header className="project-page__header"><div><p><Link to={appRoutePaths.projects.all}>Проекты</Link> / {project.title}</p><h1>{project.title}</h1><span>{project.description || "Без описания"}</span></div><div><button type="button" className="project-icon-button" aria-label="Настройки проекта" onClick={() => setSettingsOpen(true)}><Settings2 size={19} aria-hidden="true" />Настройки проекта</button><button type="button" className="projects-primary-button" onClick={() => setCreateColumnId(columns[0]?.id ?? "")}><Plus size={18} />Новая задача</button></div></header>
     <div className="project-toolbar">
-      <div className="project-view-switch"><button className={!isList ? "active" : ""} type="button" onClick={() => navigate(appRoutePaths.projects.board(project.id))}>Доска</button><button className={isList ? "active" : ""} type="button" onClick={() => navigate(appRoutePaths.projects.list(project.id))}>Список</button></div>
+      <div className="project-view-switch"><button aria-pressed={!isList} className={!isList ? "active" : ""} type="button" onClick={() => navigate(appRoutePaths.projects.board(project.id))}>Доска</button><button aria-pressed={isList} className={isList ? "active" : ""} type="button" onClick={() => navigate(appRoutePaths.projects.list(project.id))}>Список</button></div>
       <label className="projects-search"><Search size={16} /><input aria-label="Поиск по проекту" placeholder="Поиск по проекту" value={query} onChange={(event) => setQuery(event.target.value)} /></label>
       <div className="project-toolbar__filters">
         <div className="project-date-filter">
